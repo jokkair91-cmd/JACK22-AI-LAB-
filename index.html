@@ -2,6 +2,564 @@
 :root{font-family:Inter,Arial,sans-serif;color:#f5f5f5;background:#101014}*{box-sizing:border-box}body{margin:0}.app{max-width:1100px;margin:auto;padding:28px}header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}h1{font-size:28px;letter-spacing:2px;margin:0}h1 span{color:#ff4545}.sub{color:#999;font-size:13px}button,input{font:inherit}button{cursor:pointer;border:0;border-radius:8px;padding:12px 17px;background:#292932;color:#fff}button:hover{filter:brightness(1.2)}button.primary{background:#e3313d;font-weight:700}.transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:28px 0;background:#1b1b22;padding:16px;border-radius:12px}input[type=number]{width:75px;background:#111116;border:1px solid #444;color:white;padding:10px;border-radius:7px}.panel{background:#1b1b22;padding:20px;border-radius:14px;overflow-x:auto}.legend{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;min-width:780px;margin-bottom:10px;color:#999;font-size:12px;text-align:center}.track{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;align-items:center;min-width:780px;margin-bottom:12px}.track-label{font-weight:700;font-size:13px}.step{aspect-ratio:1;border-radius:6px;background:#34343d;padding:0;border:1px solid #45454e}.step.active{background:#e3313d;border-color:#ff6c74}.step.playing{outline:3px solid #fff;outline-offset:1px}.step.beat{background:#454550}.step.beat.active{background:#f0444e}footer{color:#777;font-size:12px;margin-top:20px}.status{color:#bbb;font-size:13px}
 /* V1.1 : volume master (même style que le reste) */
 input[type=range]{width:120px;accent-color:#e3313d;cursor:pointer}.master-val{min-width:42px;color:#bbb;font-size:13px}
+
+/* V1.2 : synthé JX-22 */
+.synth{margin-top:20px}.synth h2{margin:0 0 14px;font-size:15px;letter-spacing:2px}
+.synth-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.synth-controls label{color:#999;font-size:12px;letter-spacing:1px}
+select{background:#111116;border:1px solid #444;color:#fff;padding:10px;border-radius:7px;font:inherit}
+.oct{display:flex;align-items:center;gap:8px}.oct button{padding:8px 14px}.oct-val{min-width:18px;text-align:center;font-weight:700}
+#piano{position:relative;height:170px;margin-top:16px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none}
+.key{position:absolute;top:0;cursor:pointer;touch-action:none}
+.key.white{height:100%;background:#f2f2f5;border:1px solid #8b8b95;border-radius:0 0 7px 7px;z-index:1;color:#555}
+.key.black{height:62%;background:#17171c;border:1px solid #000;border-radius:0 0 5px 5px;z-index:2;color:#aaa}
+.key.down{background:#e3313d;color:#fff}
+.key span{position:absolute;left:0;right:0;text-align:center;pointer-events:none}
+.kk{bottom:6px;font-size:12px;font-weight:700}.kn{bottom:26px;font-size:10px;opacity:.75}
+.hint{color:#888;font-size:12px;margin:12px 0 0;line-height:1.5}
+</style></head><body><main class="app"><header><div><h1>JACK<span>22</span> STUDIO</h1><div class="sub">J-DRUMS · BEATMAKER + SYNTHÉ JX-22 · V1.2</div></div><div class="sub">JACK22 AI LAB</div></header><div class="transport"><button class="primary" id="play">▶ Play</button><button id="stop">■ Stop</button><label for="bpm">BPM</label><input id="bpm" type="number" min="40" max="240" value="120"><label for="master">VOLUME</label><input id="master" type="range" min="0" max="100" value="70" aria-label="Volume master"><span class="master-val" id="masterVal">70%</span><button id="save">Sauvegarder</button><button id="load">Charger</button><button id="clear">Effacer</button><span class="status" id="status">Prêt</span></div><section class="panel"><div class="legend"><div>INSTRUMENT</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div></div><div id="tracks"></div></section><section class="panel synth" id="synth"><h2>SYNTHÉ JX-22</h2><div class="synth-controls"><label for="preset">SON</label><select id="preset"><option value="lead">Lead</option><option value="bass">Bass</option><option value="pad">Pad</option><option value="pluck">Pluck</option><option value="sub808">808 Sub</option></select><span class="oct"><label>OCTAVE</label><button id="octDown" aria-label="Octave plus basse">−</button><span class="oct-val" id="octVal">4</span><button id="octUp" aria-label="Octave plus haute">+</button></span><label for="synthVol">VOLUME SYNTHÉ</label><input id="synthVol" type="range" min="0" max="100" value="80" aria-label="Volume synthé"><span class="master-val" id="synthVolVal">80%</span><button id="panic">Couper les notes</button></div><div id="piano" role="group" aria-label="Clavier de piano"></div><p class="hint">Joue à la souris, au doigt ou au clavier (les lettres sont écrites sur les touches). ↑ / ↓ : changer d'octave. Le synthé reste jouable pendant que le beat tourne, et Play / Pause / Stop ne coupent pas tes notes.</p></section><footer>Les sons sont synthétisés localement avec Web Audio. Aucun compte ni abonnement nécessaire.</footer></main><script>
+"use strict";
+/* =====================================================================
+   JACK22 STUDIO — J-Drums V1.1 + synthé JX-22 (V1.2)
+   Ce qui change par rapport à la V1 (voir aussi les commentaires "V1.1") :
+   1. Play / Pause / Stop séparés : Pause reprend là où on s'est arrêté.
+   2. Une seule minuterie de lecture à la fois (même si on clique très vite).
+   3. Volume master + protection douce contre la saturation.
+   4. Sauvegarde / chargement sécurisés (erreurs gérées, BPM validé).
+   ===================================================================== */
+
+/* ---------- Réglages (faciles à modifier) ---------- */
+const names = ['KICK', 'SNARE', 'HI-HAT', 'CLAP'];
+const STEPS = 16;                    // nombre de pas
+const SAVE_KEY = 'jack22-pattern-v1';// même clé que la V1 : les anciennes sauvegardes restent lisibles
+const BPM_MIN = 40, BPM_MAX = 240, BPM_DEFAULT = 120;
+const LOOKAHEAD = 0.12;              // secondes de sons programmées à l'avance
+const SOFT_LIMITER = true;           // mettre false pour retirer la protection anti-saturation
+const LIMIT_RANGE = 2;               // le limiteur "voit" un signal jusqu'à ±2 avant d'être plafonné (voir initAudio)
+
+/* ---------- État du programme ---------- */
+const pattern = names.map(() => Array(STEPS).fill(false));
+[0, 4, 8, 12].forEach(i => pattern[0][i] = true);
+[4, 12].forEach(i => pattern[1][i] = true);
+[0, 2, 4, 6, 8, 10, 12, 14].forEach(i => pattern[2][i] = true);
+
+let audio = null, noiseBuffer = null, masterGain = null, bus = null;
+let synthBus = null, satShaper = null;   // V1.2 : bus du synthé + saturation du preset 808
+let state = 'stopped';               // 'stopped' | 'playing' | 'paused'
+let step = 0;                        // prochain pas à programmer
+let nextTime = 0;                    // moment (en secondes audio) du prochain pas
+let resumeStep = 0;                  // pas où reprendre après une pause
+let timer = null, raf = null;        // minuterie de programmation / animation
+let queue = [];                      // pas programmés : {step, time}
+let cols = [], shownStep = -1;       // cases par colonne + pas actuellement surligné
+
+const $ = id => document.getElementById(id);
+const tracks = $('tracks');
+const setStatus = text => { $('status').textContent = text; };
+
+/* ---------- Affichage de la grille ---------- */
+function render() {
+  tracks.innerHTML = '';
+  cols = Array.from({ length: STEPS }, () => []);
+  names.forEach((name, r) => {
+    const row = document.createElement('div');
+    row.className = 'track';
+    const label = document.createElement('div');
+    label.className = 'track-label';
+    label.textContent = name;
+    row.append(label);
+    for (let c = 0; c < STEPS; c++) {
+      const b = document.createElement('button');
+      b.className = 'step' + (c % 4 === 0 ? ' beat' : '') + (pattern[r][c] ? ' active' : '');
+      b.setAttribute('aria-label', `${name} pas ${c + 1}`);
+      b.setAttribute('aria-pressed', String(pattern[r][c]));
+      b.onclick = () => {
+        pattern[r][c] = !pattern[r][c];
+        b.classList.toggle('active', pattern[r][c]);
+        b.setAttribute('aria-pressed', String(pattern[r][c]));
+      };
+      cols[c].push(b);
+      row.append(b);
+    }
+    tracks.append(row);
+  });
+  if (shownStep >= 0) highlight(shownStep);   // garde le surlignage après un rechargement de la grille
+}
+
+/* Surligne une colonne (c = -1 : plus rien) */
+function highlight(c) {
+  cols.forEach(col => col.forEach(b => b.classList.remove('playing')));
+  shownStep = c;
+  if (c >= 0 && cols[c]) cols[c].forEach(b => b.classList.add('playing'));
+}
+
+/* ---------- Audio : moteur, volume master, protection ---------- */
+function volumeToGain(v) {            // 0–100 % -> gain (courbe douce : 50 % ≈ -12 dB)
+  const x = Math.max(0, Math.min(100, Number(v) || 0)) / 100;
+  return x * x;
+}
+
+/* Courbe "limiteur doux" : ne change rien sous 0.8, puis arrondit vers un plafond de 0.95
+   (le signal ne dépasse donc jamais 0.95, donc jamais de saturation numérique).
+   Un WaveShaper ne lit que les valeurs entre -1 et +1. Pour qu'il puisse traiter un signal
+   allant jusqu'à ±LIMIT_RANGE, on divise le signal par LIMIT_RANGE AVANT (gain "pre" dans
+   initAudio) et la courbe multiplie par LIMIT_RANGE (ligne "x = ..." ci-dessous).
+   Les deux se compensent : le gain total est exactement 1 (0 dB) sous le seuil de 0.8. */
+function makeSoftLimitCurve() {
+  const n = 2049, a = 0.8, ceiling = 0.95, curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1) * 2 - 1) * LIMIT_RANGE;   // valeur réelle du signal que cette case représente
+    const ax = Math.abs(x);
+    const y = ax <= a ? ax : a + (ceiling - a) * Math.tanh((ax - a) / (ceiling - a));
+    curve[i] = x < 0 ? -y : y;
+  }
+  return curve;
+}
+
+function initAudio() {
+  if (!audio) {
+    audio = new (window.AudioContext || window.webkitAudioContext)();
+    noiseBuffer = audio.createBuffer(1, audio.sampleRate, audio.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+
+    // Chaîne de sortie : sons -> volume master -> (limiteur doux) -> haut-parleurs
+    masterGain = audio.createGain();
+    masterGain.gain.value = volumeToGain($('master').value);
+    if (SOFT_LIMITER) {
+      const pre = audio.createGain(); pre.gain.value = 1 / LIMIT_RANGE;   // compensé par la courbe (gain total = 1)
+      const shaper = audio.createWaveShaper();
+      shaper.curve = makeSoftLimitCurve();
+      shaper.oversample = 'none';   // 'none' : le plafond est respecté exactement
+      masterGain.connect(pre); pre.connect(shaper); shaper.connect(audio.destination);
+    } else {
+      masterGain.connect(audio.destination);
+    }
+
+    // V1.2 : bus du synthé (volume synthé) -> volume master. Le preset 808 passe par une saturation douce.
+    synthBus = audio.createGain();
+    synthBus.gain.value = volumeToGain($('synthVol').value);
+    synthBus.connect(masterGain);
+    satShaper = audio.createWaveShaper();
+    satShaper.curve = makeSatCurve(SAT_DRIVE, SAT_OUT);
+    satShaper.oversample = '2x';
+    satShaper.connect(synthBus);
+  }
+  if (audio.state === 'suspended') audio.resume().catch(() => {});
+}
+
+$('master').addEventListener('input', () => {
+  const v = Number($('master').value);
+  $('masterVal').textContent = v + '%';
+  if (audio) masterGain.gain.setTargetAtTime(volumeToGain(v), audio.currentTime, 0.015);
+});
+
+/* ---------- Les sons (identiques à la V1, mais branchés sur "bus") ---------- */
+function env(g, t, peak, dur) {
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+}
+function tone(t, f0, f1, dur, peak) {
+  const o = audio.createOscillator(), g = audio.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(f0, t);
+  o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  env(g, t, peak, dur);
+  o.connect(g).connect(bus);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+function noise(t, dur, peak, highpass) {
+  const s = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
+  s.buffer = noiseBuffer;
+  f.type = 'highpass'; f.frequency.value = highpass;
+  env(g, t, peak, dur);
+  s.connect(f).connect(g).connect(bus);
+  s.start(t); s.stop(t + dur + 0.02);
+}
+function hit(r, t) {
+  if (r === 0) tone(t, 155, 42, .24, .85);
+  if (r === 1) { noise(t, .17, .32, 1100); tone(t, 190, 110, .12, .18); }
+  if (r === 2) noise(t, .055, .16, 7000);
+  if (r === 3) { noise(t, .12, .25, 1500); noise(t + .018, .09, .12, 1500); }
+}
+
+/* "bus de lecture" : tous les sons d'une lecture y passent.
+   Pause/Stop le coupent d'un coup, y compris les sons déjà programmés. */
+function killBus() {
+  if (!bus) return;
+  const old = bus; bus = null;
+  const t = audio.currentTime;
+  old.gain.cancelScheduledValues(t);
+  old.gain.setValueAtTime(old.gain.value, t);
+  old.gain.linearRampToValueAtTime(0, t + 0.015);   // fondu très court : pas de "clic"
+  setTimeout(() => { try { old.disconnect(); } catch (e) {} }, 80);
+}
+
+/* ---------- Tempo ---------- */
+function getBpm() {
+  const n = Number($('bpm').value) || BPM_DEFAULT;
+  return Math.max(BPM_MIN, Math.min(BPM_MAX, n));
+}
+$('bpm').addEventListener('change', () => { $('bpm').value = getBpm(); });
+
+/* ---------- Lecture : programmation des sons ---------- */
+function schedule() {
+  if (state !== 'playing') return;
+  const now = audio.currentTime;
+  if (nextTime < now - 0.05) nextTime = now + 0.05;   // si la page a pris du retard, on recale (pas de rafale)
+  const stepLength = 60 / getBpm() / 4;
+  while (nextTime < now + LOOKAHEAD) {
+    const current = step;
+    names.forEach((_, r) => { if (pattern[r][current]) hit(r, nextTime); });
+    queue.push({ step: current, time: nextTime });
+    nextTime += stepLength;
+    step = (step + 1) % STEPS;
+  }
+  while (queue.length && queue[0].time < now - 1) queue.shift();   // nettoyage
+}
+
+/* Surlignage : suit l'horloge audio (pas de setTimeout qui traînent) */
+function paintLoop() {
+  if (state !== 'playing') { raf = null; return; }
+  const now = audio.currentTime;
+  let last = -1;
+  while (queue.length && queue[0].time <= now) last = queue.shift().step;
+  if (last >= 0 && last !== shownStep) highlight(last);
+  raf = requestAnimationFrame(paintLoop);
+}
+
+function stopTimers() {
+  clearInterval(timer); timer = null;
+  if (raf !== null) cancelAnimationFrame(raf);
+  raf = null;
+}
+
+/* ---------- Play / Pause / Stop ---------- */
+function start(fromStep) {
+  initAudio();
+  stopTimers(); killBus();                  // sécurité : jamais deux lectures en même temps
+  bus = audio.createGain();
+  bus.connect(masterGain);
+  queue = [];
+  step = fromStep % STEPS;
+  nextTime = audio.currentTime + 0.05;
+  state = 'playing';
+  $('play').textContent = 'Ⅱ Pause';
+  setStatus('Lecture');
+  schedule();
+  timer = setInterval(schedule, 25);        // la seule minuterie du programme
+  raf = requestAnimationFrame(paintLoop);
+}
+
+function pause() {
+  const now = audio.currentTime;
+  const next = queue.find(q => q.time > now);        // premier pas pas encore joué
+  resumeStep = next ? next.step : step;
+  state = 'paused';
+  stopTimers(); killBus();
+  queue = [];
+  $('play').textContent = '▶ Play';
+  setStatus('Pause');
+}
+
+function stop() {
+  if (audio) { stopTimers(); killBus(); }
+  state = 'stopped';
+  step = 0; resumeStep = 0; queue = [];
+  highlight(-1);
+  $('play').textContent = '▶ Play';
+  setStatus('Arrêté');
+}
+
+$('play').onclick = () => {
+  if (state === 'playing') pause();
+  else start(state === 'paused' ? resumeStep : 0);
+};
+$('stop').onclick = stop;
+
+/* ---------- Sauvegarde / chargement (sécurisés) ---------- */
+function parseSave(raw) {                    // renvoie {pattern, bpm} ou null si le contenu est invalide
+  try {
+    const s = JSON.parse(raw);
+    if (!s || !Array.isArray(s.pattern) || s.pattern.length !== names.length) return null;
+    if (!s.pattern.every(row => Array.isArray(row) && row.length === STEPS)) return null;
+    const n = Number(s.bpm);
+    const bpm = (isFinite(n) && n > 0) ? Math.max(BPM_MIN, Math.min(BPM_MAX, n)) : BPM_DEFAULT;
+    return { pattern: s.pattern.map(row => row.map(v => v === true || v === 1)), bpm };
+  } catch (e) { return null; }
+}
+
+$('save').onclick = () => {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ version: '1.1', pattern, bpm: getBpm() }));
+    setStatus('Rythme sauvegardé');
+  } catch (e) {
+    setStatus('Sauvegarde impossible (stockage du navigateur bloqué ou plein)');
+  }
+};
+
+$('load').onclick = () => {
+  let raw;
+  try { raw = localStorage.getItem(SAVE_KEY); }
+  catch (e) { setStatus('Chargement impossible (stockage du navigateur bloqué)'); return; }
+  if (raw === null) { setStatus('Aucune sauvegarde trouvée'); return; }
+  const saved = parseSave(raw);
+  if (!saved) { setStatus('Sauvegarde invalide : rythme inchangé'); return; }
+  saved.pattern.forEach((row, i) => row.forEach((v, j) => pattern[i][j] = v));
+  $('bpm').value = saved.bpm;
+  render();
+  setStatus('Rythme chargé');
+};
+
+$('clear').onclick = () => {
+  pattern.forEach(row => row.fill(false));
+  render();
+  setStatus('Rythme effacé');
+};
+
+/* =====================================================================
+   SYNTHÉ JX-22 (V1.2)
+   - Une "voix" = 2 oscillateurs -> filtre -> enveloppe -> bus du synthé.
+   - Le synthé est INDÉPENDANT du beat : Play / Pause / Stop ne le touchent pas.
+   - Chaque note relâchée s'éteint en douceur (pas de clic).
+   - Polyphonie limitée à MAX_VOICES : au-delà, la plus ancienne voix est coupée.
+   ===================================================================== */
+const MAX_VOICES = 10;
+const START_LEAD = 0.015;             // les notes démarrent un tout petit peu dans le futur (en secondes) pour que la montée douce ne soit jamais "déjà passée"
+const SAT_DRIVE = 6;                        // force de la saturation du preset 808 (plus grand = plus d'harmoniques)
+const SAT_OUT = 0.30;                       // niveau de sortie de la saturation
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const WHITE_IDX = [0,2,4,5,7,9,11,12,14,16,17,19,21,23];        // 14 touches blanches = 2 octaves
+const BLACK_AFTER = {0:1, 1:3, 3:6, 4:8, 5:10, 7:13, 8:15, 10:18, 11:20, 12:22}; // place de la blanche -> numéro du dièse
+/* Touches de l'ordinateur : on lit la POSITION physique (e.code), donc ça marche en AZERTY comme en QWERTY */
+const KEYMAP = {KeyA:0,KeyW:1,KeyS:2,KeyE:3,KeyD:4,KeyF:5,KeyT:6,KeyG:7,KeyY:8,KeyH:9,KeyU:10,KeyJ:11,KeyK:12,KeyO:13,KeyL:14,KeyP:15,Semicolon:16};
+const KEY_FALLBACK = {KeyA:'A',KeyW:'W',KeyS:'S',KeyE:'E',KeyD:'D',KeyF:'F',KeyT:'T',KeyG:'G',KeyY:'Y',KeyH:'H',KeyU:'U',KeyJ:'J',KeyK:'K',KeyO:'O',KeyL:'L',KeyP:'P',Semicolon:';'};
+
+const PRESETS = {
+  lead:   { osc1:'sawtooth', osc2:'square',   mix:[0.5,0.5],   detune:12, cutoff:3200, q:8,   attack:0.006, decay:0.20, sustain:0.75, release:0.25, level:0.3,  octave:4 },
+  bass:   { osc1:'sine',     osc2:'sawtooth', mix:[0.6,0.4],   detune:4,  cutoff:700,  q:4,   attack:0.005, decay:0.15, sustain:0.85, release:0.18, level:0.28,  octave:2 },
+  pad:    { osc1:'sawtooth', osc2:'triangle', mix:[0.5,0.5],   detune:18, cutoff:1800, q:3,   attack:0.35,  decay:0.50, sustain:0.90, release:1.10, level:0.31,   octave:3 },
+  pluck:  { osc1:'triangle', osc2:'sine',     mix:[0.6,0.4],   detune:6,  cutoff:4200, q:12,  attack:0.004, decay:0.30, sustain:0.08, release:0.30, level:0.46, octave:4 },
+  /* 808 Sub : sinus profond + petit "coup" de hauteur au départ + saturation douce (ajoute des harmoniques) pour rester audible sur petits haut-parleurs */
+  sub808: { osc1:'sine',     osc2:'sine',     mix:[0.45,0.55], detune:0,  cutoff:900,  q:0.7, attack:0.003, decay:1.40, sustain:0.55, release:0.40, level:0.32,   octave:1, glide:{ratio:1.9, time:0.045}, drive:true }
+};
+let presetKey = 'lead', octave = 4;
+
+const alive = [];            // toutes les voix qui sonnent (tenues + en train de s'éteindre)
+const held = new Map();      // source (touche, doigt...) -> voix tenue
+const pressCount = new Map();// numéro de touche -> nombre de sources qui l'appuient
+const keyEls = [];
+
+function makeSatCurve(k, out) {      // saturation douce : out * tanh(k * x)
+  const n = 2049, c = new Float32Array(n);
+  for (let i = 0; i < n; i++) { const x = i / (n - 1) * 2 - 1; c[i] = out * Math.tanh(k * x); }
+  return c;
+}
+const noteFreq = midi => 440 * Math.pow(2, (midi - 69) / 12);
+
+/* Fige un réglage à sa valeur actuelle pour repartir de là sans saut.
+   (On lit la valeur, on efface les automatisations prévues, puis on repose la valeur.
+   Testé : avec cancelAndHoldAtTime + rampe, Chrome coupait le son d'un coup, donc un clic.) */
+function holdParam(param, t) {
+  const cur = param.value;
+  param.cancelScheduledValues(t);
+  param.setValueAtTime(cur, t);
+}
+
+function noteOn(source, idx) {
+  if (held.has(source)) noteOff(source);          // sécurité : une source = une note
+  initAudio();
+  while (alive.length >= MAX_VOICES) stealVoice();
+  const p = PRESETS[presetKey], t = audio.currentTime + START_LEAD;
+  const freq = noteFreq((octave + 1) * 12 + idx);
+  const o1 = audio.createOscillator(), o2 = audio.createOscillator();
+  o1.type = p.osc1; o2.type = p.osc2;
+  o2.detune.value = p.detune;
+  if (p.glide) {                                   // 808 : la hauteur retombe vite sur la note
+    o1.frequency.setValueAtTime(freq * p.glide.ratio, t);
+    o1.frequency.exponentialRampToValueAtTime(freq, t + p.glide.time);
+  } else o1.frequency.value = freq;
+  o2.frequency.value = freq;
+  const m1 = audio.createGain(), m2 = audio.createGain();
+  m1.gain.value = p.mix[0]; m2.gain.value = p.mix[1];
+  const f = audio.createBiquadFilter();
+  f.type = 'lowpass'; f.frequency.value = p.cutoff; f.Q.value = p.q;
+  const g = audio.createGain();
+  const aEnd = t + p.attack;                       // montée douce (jamais instantanée : pas de clic)
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(p.level, aEnd);
+  g.gain.setTargetAtTime(p.level * p.sustain, aEnd, p.decay / 3);   // descente vers le niveau tenu
+  o1.connect(m1); o2.connect(m2); m1.connect(f); m2.connect(f); f.connect(g);
+  g.connect(p.drive ? satShaper : synthBus);
+  const v = { o1, o2, m1, m2, f, g, idx, p, source, state: 'held' };
+  o1.onended = () => disposeVoice(v);
+  o1.start(t); o2.start(t);
+  alive.push(v); held.set(source, v); press(idx, 1);
+  return v;
+}
+
+function noteOff(source) {
+  const v = held.get(source);
+  if (!v) return;
+  held.delete(source); press(v.idx, -1);
+  releaseVoice(v);
+}
+
+/* Relâchement progressif : le volume descend en douceur jusqu'à presque 0, puis on arrête les oscillateurs */
+function releaseVoice(v) {
+  if (v.state !== 'held') return;
+  v.state = 'releasing';
+  const t = audio.currentTime, r = v.p.release;
+  holdParam(v.g.gain, t);
+  v.g.gain.exponentialRampToValueAtTime(0.0001, t + r);
+  v.g.gain.setValueAtTime(0, t + r);
+  try { v.o1.stop(t + r + 0.02); v.o2.stop(t + r + 0.02); } catch (e) {}
+}
+
+/* Coupure rapide mais sans clic (25 ms) : pour voler une voix ou "Couper les notes" */
+function killVoice(v) {
+  const i = alive.indexOf(v); if (i >= 0) alive.splice(i, 1);
+  if (v.state === 'dying') return;
+  if (v.state === 'held') { held.delete(v.source); press(v.idx, -1); }
+  v.state = 'dying';
+  const t = audio.currentTime;
+  holdParam(v.g.gain, t);
+  v.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.025);
+  v.g.gain.setValueAtTime(0, t + 0.025);
+  try { v.o1.stop(t + 0.04); v.o2.stop(t + 0.04); } catch (e) {}
+}
+function stealVoice() {   // on coupe d'abord la plus ancienne voix qui s'éteint déjà, sinon la plus ancienne tenue
+  killVoice(alive.find(x => x.state === 'releasing') || alive[0]);
+}
+function disposeVoice(v) {
+  [v.o1, v.o2, v.m1, v.m2, v.f, v.g].forEach(n => { try { n.disconnect(); } catch (e) {} });
+  const i = alive.indexOf(v); if (i >= 0) alive.splice(i, 1);
+  if (held.get(v.source) === v) { held.delete(v.source); press(v.idx, -1); }
+}
+function releaseAllHeld() { ptrNote.clear(); [...held.keys()].forEach(noteOff); }   // relâche tout (fenêtre perdue, etc.)
+function panic() {                                                                  // bouton "Couper les notes"
+  ptrNote.clear(); [...held.keys()].forEach(noteOff);
+  alive.slice().forEach(killVoice);
+}
+
+function press(idx, d) {   // surligne la touche tant qu'au moins une source l'appuie
+  const n = (pressCount.get(idx) || 0) + d;
+  if (n <= 0) { pressCount.delete(idx); keyEls[idx].classList.remove('down'); }
+  else { pressCount.set(idx, n); keyEls[idx].classList.add('down'); }
+}
+
+/* ---------- Clavier de piano (dessin) ---------- */
+const piano = $('piano');
+function makeKey(idx, type) {
+  const k = document.createElement('div');
+  k.className = 'key ' + type; k.dataset.i = idx; k.setAttribute('role', 'button');
+  k.innerHTML = '<span class="kn"></span><span class="kk"></span>';
+  keyEls[idx] = k; return k;
+}
+(function buildPiano() {
+  const W = 100 / WHITE_IDX.length, BW = W * 0.6;     // largeurs en % : le piano s'adapte à l'écran
+  WHITE_IDX.forEach((idx, pos) => {
+    const k = makeKey(idx, 'white'); k.style.left = (pos * W) + '%'; k.style.width = W + '%'; piano.append(k);
+  });
+  Object.entries(BLACK_AFTER).forEach(([pos, idx]) => {
+    const k = makeKey(idx, 'black'); k.style.left = ((+pos + 1) * W - BW / 2) + '%'; k.style.width = BW + '%'; piano.append(k);
+  });
+})();
+function refreshNoteLabels() {
+  keyEls.forEach((k, idx) => {
+    const midi = (octave + 1) * 12 + idx, name = NOTE_NAMES[midi % 12] + (Math.floor(midi / 12) - 1);
+    k.setAttribute('aria-label', name);
+    k.querySelector('.kn').textContent = (idx % 12 === 0) ? name : '';
+  });
+}
+function setKeyLabels(layoutMap) {   // écrit la vraie lettre du clavier (AZERTY ou QWERTY) sur chaque touche
+  Object.entries(KEYMAP).forEach(([code, idx]) => {
+    const letter = (layoutMap && layoutMap.get && layoutMap.get(code)) || KEY_FALLBACK[code];
+    keyEls[idx].querySelector('.kk').textContent = String(letter).toUpperCase();
+  });
+}
+setKeyLabels(null);
+try { if (navigator.keyboard && navigator.keyboard.getLayoutMap) navigator.keyboard.getLayoutMap().then(setKeyLabels).catch(() => {}); } catch (e) {}
+
+/* ---------- Octave, son, volume ---------- */
+function setOctave(o) {
+  octave = Math.max(1, Math.min(7, o));
+  $('octVal').textContent = octave;
+  refreshNoteLabels();
+}
+$('octDown').onclick = () => setOctave(octave - 1);
+$('octUp').onclick = () => setOctave(octave + 1);
+$('preset').addEventListener('change', () => {
+  presetKey = $('preset').value;
+  setOctave(PRESETS[presetKey].octave);            // chaque son démarre dans son octave naturelle (808 = très grave)
+});
+$('synthVol').addEventListener('input', () => {
+  const v = Number($('synthVol').value);
+  $('synthVolVal').textContent = v + '%';
+  if (audio) synthBus.gain.setTargetAtTime(volumeToGain(v), audio.currentTime, 0.015);
+});
+$('panic').onclick = panic;
+refreshNoteLabels();
+
+/* ---------- Souris et tactile (pointer events : plusieurs doigts possibles, glissando) ---------- */
+const ptrNote = new Map();   // identifiant du doigt/souris -> numéro de touche
+function keyAtPoint(x, y) {
+  const el = document.elementFromPoint(x, y), k = el && el.closest && el.closest('.key');
+  return (k && piano.contains(k)) ? +k.dataset.i : null;
+}
+piano.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  const k = e.target.closest('.key'); if (!k) return;
+  e.preventDefault();
+  try { piano.setPointerCapture(e.pointerId); } catch (err) {}
+  const idx = +k.dataset.i;
+  ptrNote.set(e.pointerId, idx);
+  noteOn('p' + e.pointerId, idx);
+});
+piano.addEventListener('pointermove', e => {       // on glisse le doigt/la souris sur une autre touche
+  if (!ptrNote.has(e.pointerId)) return;
+  const idx = keyAtPoint(e.clientX, e.clientY);
+  if (idx === null || idx === ptrNote.get(e.pointerId)) return;
+  noteOff('p' + e.pointerId);
+  ptrNote.set(e.pointerId, idx);
+  noteOn('p' + e.pointerId, idx);
+});
+const endPointer = e => {
+  if (!ptrNote.has(e.pointerId)) return;
+  ptrNote.delete(e.pointerId);
+  noteOff('p' + e.pointerId);
+};
+['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => piano.addEventListener(ev, endPointer));
+piano.addEventListener('contextmenu', e => e.preventDefault());   // pas de menu pendant un appui long
+
+/* ---------- Clavier de l'ordinateur ---------- */
+document.addEventListener('keydown', e => {
+  if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+  const ae = document.activeElement;
+  if (ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) return;   // on tape dans un champ : pas de notes
+  if (e.code === 'ArrowUp')   { e.preventDefault(); setOctave(octave + 1); return; }
+  if (e.code === 'ArrowDown') { e.preventDefault(); setOctave(octave - 1); return; }
+  const idx = KEYMAP[e.code];
+  if (idx === undefined) return;
+  e.preventDefault();
+  noteOn('k:' + e.code, idx);
+});
+document.addEventListener('keyup', e => noteOff('k:' + e.code));
+
+/* ---------- Anti "notes bloquées" ---------- */
+window.addEventListener('blur', releaseAllHeld);
+document.addEventListener('visibilitychange', () => { if (document.hidden) releaseAllHeld(); });
+/* Après avoir réglé un curseur ou une liste, on rend le clavier à la page (sinon les lettres restent "dans" le curseur) */
+document.querySelectorAll('input[type=range]').forEach(el => el.addEventListener('pointerup', () => el.blur()));
+document.querySelectorAll('select').forEach(el => el.addEventListener('change', () => el.blur()));
+$('bpm').addEventListener('keydown', e => { if (e.key === 'Enter') $('bpm').blur(); });
+
+render();
+</script></body></html>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JACK22 STUDIO</title><style>
+:root{font-family:Inter,Arial,sans-serif;color:#f5f5f5;background:#101014}*{box-sizing:border-box}body{margin:0}.app{max-width:1100px;margin:auto;padding:28px}header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}h1{font-size:28px;letter-spacing:2px;margin:0}h1 span{color:#ff4545}.sub{color:#999;font-size:13px}button,input{font:inherit}button{cursor:pointer;border:0;border-radius:8px;padding:12px 17px;background:#292932;color:#fff}button:hover{filter:brightness(1.2)}button.primary{background:#e3313d;font-weight:700}.transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:28px 0;background:#1b1b22;padding:16px;border-radius:12px}input[type=number]{width:75px;background:#111116;border:1px solid #444;color:white;padding:10px;border-radius:7px}.panel{background:#1b1b22;padding:20px;border-radius:14px;overflow-x:auto}.legend{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;min-width:780px;margin-bottom:10px;color:#999;font-size:12px;text-align:center}.track{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;align-items:center;min-width:780px;margin-bottom:12px}.track-label{font-weight:700;font-size:13px}.step{aspect-ratio:1;border-radius:6px;background:#34343d;padding:0;border:1px solid #45454e}.step.active{background:#e3313d;border-color:#ff6c74}.step.playing{outline:3px solid #fff;outline-offset:1px}.step.beat{background:#454550}.step.beat.active{background:#f0444e}footer{color:#777;font-size:12px;margin-top:20px}.status{color:#bbb;font-size:13px}
+/* V1.1 : volume master (même style que le reste) */
+input[type=range]{width:120px;accent-color:#e3313d;cursor:pointer}.master-val{min-width:42px;color:#bbb;font-size:13px}
 </style></head><body><main class="app"><header><div><h1>JACK<span>22</span> STUDIO</h1><div class="sub">J-DRUMS · BEATMAKER V1.1</div></div><div class="sub">JACK22 AI LAB</div></header><div class="transport"><button class="primary" id="play">▶ Play</button><button id="stop">■ Stop</button><label for="bpm">BPM</label><input id="bpm" type="number" min="40" max="240" value="120"><label for="master">VOLUME</label><input id="master" type="range" min="0" max="100" value="70" aria-label="Volume master"><span class="master-val" id="masterVal">70%</span><button id="save">Sauvegarder</button><button id="load">Charger</button><button id="clear">Effacer</button><span class="status" id="status">Prêt</span></div><section class="panel"><div class="legend"><div>INSTRUMENT</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div></div><div id="tracks"></div></section><footer>Les sons sont synthétisés localement avec Web Audio. Aucun compte ni abonnement nécessaire.</footer></main><script>
 "use strict";
 /* =====================================================================
