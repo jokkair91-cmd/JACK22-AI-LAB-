@@ -1,5 +1,297 @@
 <!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JACK22 STUDIO</title><style>
 :root{font-family:Inter,Arial,sans-serif;color:#f5f5f5;background:#101014}*{box-sizing:border-box}body{margin:0}.app{max-width:1100px;margin:auto;padding:28px}header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}h1{font-size:28px;letter-spacing:2px;margin:0}h1 span{color:#ff4545}.sub{color:#999;font-size:13px}button,input{font:inherit}button{cursor:pointer;border:0;border-radius:8px;padding:12px 17px;background:#292932;color:#fff}button:hover{filter:brightness(1.2)}button.primary{background:#e3313d;font-weight:700}.transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:28px 0;background:#1b1b22;padding:16px;border-radius:12px}input[type=number]{width:75px;background:#111116;border:1px solid #444;color:white;padding:10px;border-radius:7px}.panel{background:#1b1b22;padding:20px;border-radius:14px;overflow-x:auto}.legend{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;min-width:780px;margin-bottom:10px;color:#999;font-size:12px;text-align:center}.track{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;align-items:center;min-width:780px;margin-bottom:12px}.track-label{font-weight:700;font-size:13px}.step{aspect-ratio:1;border-radius:6px;background:#34343d;padding:0;border:1px solid #45454e}.step.active{background:#e3313d;border-color:#ff6c74}.step.playing{outline:3px solid #fff;outline-offset:1px}.step.beat{background:#454550}.step.beat.active{background:#f0444e}footer{color:#777;font-size:12px;margin-top:20px}.status{color:#bbb;font-size:13px}
-</style></head><body><main class="app"><header><div><h1>JACK<span>22</span> STUDIO</h1><div class="sub">J-DRUMS · BEATMAKER V1</div></div><div class="sub">JACK22 AI LAB</div></header><div class="transport"><button class="primary" id="play">▶ Play</button><button id="stop">■ Stop</button><label for="bpm">BPM</label><input id="bpm" type="number" min="40" max="240" value="120"><button id="save">Sauvegarder</button><button id="load">Charger</button><button id="clear">Effacer</button><span class="status" id="status">Prêt</span></div><section class="panel"><div class="legend"><div>INSTRUMENT</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div></div><div id="tracks"></div></section><footer>Les sons sont synthétisés localement avec Web Audio. Aucun compte ni abonnement nécessaire.</footer></main><script>
-const names=['KICK','SNARE','HI-HAT','CLAP'];const pattern=names.map(()=>Array(16).fill(false));[0,4,8,12].forEach(i=>pattern[0][i]=true);[4,12].forEach(i=>pattern[1][i]=true);[0,2,4,6,8,10,12,14].forEach(i=>pattern[2][i]=true);let audio,noiseBuffer,playing=false,step=0,nextTime=0,timer=null;const $=id=>document.getElementById(id);const tracks=$('tracks');function render(){tracks.innerHTML='';names.forEach((name,r)=>{const row=document.createElement('div');row.className='track';const label=document.createElement('div');label.className='track-label';label.textContent=name;row.append(label);for(let c=0;c<16;c++){const b=document.createElement('button');b.className='step'+(c%4===0?' beat':'')+(pattern[r][c]?' active':'');b.setAttribute('aria-label',`${name} pas ${c+1}`);b.setAttribute('aria-pressed',String(pattern[r][c]));b.onclick=()=>{pattern[r][c]=!pattern[r][c];b.classList.toggle('active',pattern[r][c]);b.setAttribute('aria-pressed',String(pattern[r][c]))};row.append(b)}tracks.append(row)})}function initAudio(){if(!audio){audio=new (window.AudioContext||window.webkitAudioContext)();noiseBuffer=audio.createBuffer(1,audio.sampleRate,audio.sampleRate);const data=noiseBuffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1}if(audio.state==='suspended')audio.resume()}function env(g,t,peak,dur){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+0.002);g.gain.exponentialRampToValueAtTime(0.0001,t+dur)}function tone(t,f0,f1,dur,peak){const o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);env(g,t,peak,dur);o.connect(g).connect(audio.destination);o.start(t);o.stop(t+dur+0.02)}function noise(t,dur,peak,highpass){const s=audio.createBufferSource(),f=audio.createBiquadFilter(),g=audio.createGain();s.buffer=noiseBuffer;f.type='highpass';f.frequency.value=highpass;env(g,t,peak,dur);s.connect(f).connect(g).connect(audio.destination);s.start(t);s.stop(t+dur+0.02)}function hit(r,t){if(r===0)tone(t,155,42,.24,.85);if(r===1){noise(t,.17,.32,1100);tone(t,190,110,.12,.18)}if(r===2)noise(t,.055,.16,7000);if(r===3){noise(t,.12,.25,1500);noise(t+.018,.09,.12,1500)}}function highlight(c){document.querySelectorAll('.step').forEach((b,i)=>b.classList.toggle('playing',playing&&i%16===c))}function schedule(){if(!playing)return;const bpm=Math.max(40,Math.min(240,Number($('bpm').value)||120));while(nextTime<audio.currentTime+.12){const current=step;names.forEach((_,r)=>{if(pattern[r][current])hit(r,nextTime)});const delay=Math.max(0,(nextTime-audio.currentTime)*1000);setTimeout(()=>{if(playing)highlight(current)},delay);nextTime+=60/bpm/4;step=(step+1)%16}}function stop(){playing=false;clearInterval(timer);timer=null;highlight(-1);$('play').textContent='▶ Play';$('status').textContent='Arrêté'}$('play').onclick=async()=>{if(playing){stop();return}initAudio();await audio.resume();playing=true;step=0;nextTime=audio.currentTime+.05;$('play').textContent='Ⅱ Pause';$('status').textContent='Lecture';schedule();timer=setInterval(schedule,25)};$('stop').onclick=stop;$('save').onclick=()=>{localStorage.setItem('jack22-pattern-v1',JSON.stringify({pattern,bpm:$('bpm').value}));$('status').textContent='Rythme sauvegardé'};$('load').onclick=()=>{try{const saved=JSON.parse(localStorage.getItem('jack22-pattern-v1'));if(!saved||!Array.isArray(saved.pattern)||saved.pattern.length!==4||!saved.pattern.every(x=>Array.isArray(x)&&x.length===16))throw Error();saved.pattern.forEach((row,i)=>row.forEach((v,j)=>pattern[i][j]=!!v));$('bpm').value=saved.bpm||120;render();$('status').textContent='Rythme chargé'}catch{$('status').textContent='Aucune sauvegarde valide'}};$('clear').onclick=()=>{pattern.forEach(row=>row.fill(false));render();$('status').textContent='Rythme effacé'};render();
+/* V1.1 : volume master (même style que le reste) */
+input[type=range]{width:120px;accent-color:#e3313d;cursor:pointer}.master-val{min-width:42px;color:#bbb;font-size:13px}
+</style></head><body><main class="app"><header><div><h1>JACK<span>22</span> STUDIO</h1><div class="sub">J-DRUMS · BEATMAKER V1.1</div></div><div class="sub">JACK22 AI LAB</div></header><div class="transport"><button class="primary" id="play">▶ Play</button><button id="stop">■ Stop</button><label for="bpm">BPM</label><input id="bpm" type="number" min="40" max="240" value="120"><label for="master">VOLUME</label><input id="master" type="range" min="0" max="100" value="70" aria-label="Volume master"><span class="master-val" id="masterVal">70%</span><button id="save">Sauvegarder</button><button id="load">Charger</button><button id="clear">Effacer</button><span class="status" id="status">Prêt</span></div><section class="panel"><div class="legend"><div>INSTRUMENT</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div></div><div id="tracks"></div></section><footer>Les sons sont synthétisés localement avec Web Audio. Aucun compte ni abonnement nécessaire.</footer></main><script>
+"use strict";
+/* =====================================================================
+   JACK22 STUDIO — J-Drums V1.1
+   Ce qui change par rapport à la V1 (voir aussi les commentaires "V1.1") :
+   1. Play / Pause / Stop séparés : Pause reprend là où on s'est arrêté.
+   2. Une seule minuterie de lecture à la fois (même si on clique très vite).
+   3. Volume master + protection douce contre la saturation.
+   4. Sauvegarde / chargement sécurisés (erreurs gérées, BPM validé).
+   ===================================================================== */
+
+/* ---------- Réglages (faciles à modifier) ---------- */
+const names = ['KICK', 'SNARE', 'HI-HAT', 'CLAP'];
+const STEPS = 16;                    // nombre de pas
+const SAVE_KEY = 'jack22-pattern-v1';// même clé que la V1 : les anciennes sauvegardes restent lisibles
+const BPM_MIN = 40, BPM_MAX = 240, BPM_DEFAULT = 120;
+const LOOKAHEAD = 0.12;              // secondes de sons programmées à l'avance
+const SOFT_LIMITER = true;           // mettre false pour retirer la protection anti-saturation
+const LIMIT_RANGE = 2;               // le limiteur "voit" un signal jusqu'à ±2 avant d'être plafonné (voir initAudio)
+
+/* ---------- État du programme ---------- */
+const pattern = names.map(() => Array(STEPS).fill(false));
+[0, 4, 8, 12].forEach(i => pattern[0][i] = true);
+[4, 12].forEach(i => pattern[1][i] = true);
+[0, 2, 4, 6, 8, 10, 12, 14].forEach(i => pattern[2][i] = true);
+
+let audio = null, noiseBuffer = null, masterGain = null, bus = null;
+let state = 'stopped';               // 'stopped' | 'playing' | 'paused'
+let step = 0;                        // prochain pas à programmer
+let nextTime = 0;                    // moment (en secondes audio) du prochain pas
+let resumeStep = 0;                  // pas où reprendre après une pause
+let timer = null, raf = null;        // minuterie de programmation / animation
+let queue = [];                      // pas programmés : {step, time}
+let cols = [], shownStep = -1;       // cases par colonne + pas actuellement surligné
+
+const $ = id => document.getElementById(id);
+const tracks = $('tracks');
+const setStatus = text => { $('status').textContent = text; };
+
+/* ---------- Affichage de la grille ---------- */
+function render() {
+  tracks.innerHTML = '';
+  cols = Array.from({ length: STEPS }, () => []);
+  names.forEach((name, r) => {
+    const row = document.createElement('div');
+    row.className = 'track';
+    const label = document.createElement('div');
+    label.className = 'track-label';
+    label.textContent = name;
+    row.append(label);
+    for (let c = 0; c < STEPS; c++) {
+      const b = document.createElement('button');
+      b.className = 'step' + (c % 4 === 0 ? ' beat' : '') + (pattern[r][c] ? ' active' : '');
+      b.setAttribute('aria-label', `${name} pas ${c + 1}`);
+      b.setAttribute('aria-pressed', String(pattern[r][c]));
+      b.onclick = () => {
+        pattern[r][c] = !pattern[r][c];
+        b.classList.toggle('active', pattern[r][c]);
+        b.setAttribute('aria-pressed', String(pattern[r][c]));
+      };
+      cols[c].push(b);
+      row.append(b);
+    }
+    tracks.append(row);
+  });
+  if (shownStep >= 0) highlight(shownStep);   // garde le surlignage après un rechargement de la grille
+}
+
+/* Surligne une colonne (c = -1 : plus rien) */
+function highlight(c) {
+  cols.forEach(col => col.forEach(b => b.classList.remove('playing')));
+  shownStep = c;
+  if (c >= 0 && cols[c]) cols[c].forEach(b => b.classList.add('playing'));
+}
+
+/* ---------- Audio : moteur, volume master, protection ---------- */
+function volumeToGain(v) {            // 0–100 % -> gain (courbe douce : 50 % ≈ -12 dB)
+  const x = Math.max(0, Math.min(100, Number(v) || 0)) / 100;
+  return x * x;
+}
+
+/* Courbe "limiteur doux" : ne change rien sous 0.8, puis arrondit vers un plafond de 0.95
+   (le signal ne dépasse donc jamais 0.95, donc jamais de saturation numérique).
+   Un WaveShaper ne lit que les valeurs entre -1 et +1. Pour qu'il puisse traiter un signal
+   allant jusqu'à ±LIMIT_RANGE, on divise le signal par LIMIT_RANGE AVANT (gain "pre" dans
+   initAudio) et la courbe multiplie par LIMIT_RANGE (ligne "x = ..." ci-dessous).
+   Les deux se compensent : le gain total est exactement 1 (0 dB) sous le seuil de 0.8. */
+function makeSoftLimitCurve() {
+  const n = 2049, a = 0.8, ceiling = 0.95, curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i / (n - 1) * 2 - 1) * LIMIT_RANGE;   // valeur réelle du signal que cette case représente
+    const ax = Math.abs(x);
+    const y = ax <= a ? ax : a + (ceiling - a) * Math.tanh((ax - a) / (ceiling - a));
+    curve[i] = x < 0 ? -y : y;
+  }
+  return curve;
+}
+
+function initAudio() {
+  if (!audio) {
+    audio = new (window.AudioContext || window.webkitAudioContext)();
+    noiseBuffer = audio.createBuffer(1, audio.sampleRate, audio.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+
+    // Chaîne de sortie : sons -> volume master -> (limiteur doux) -> haut-parleurs
+    masterGain = audio.createGain();
+    masterGain.gain.value = volumeToGain($('master').value);
+    if (SOFT_LIMITER) {
+      const pre = audio.createGain(); pre.gain.value = 1 / LIMIT_RANGE;   // compensé par la courbe (gain total = 1)
+      const shaper = audio.createWaveShaper();
+      shaper.curve = makeSoftLimitCurve();
+      shaper.oversample = 'none';   // 'none' : le plafond est respecté exactement
+      masterGain.connect(pre); pre.connect(shaper); shaper.connect(audio.destination);
+    } else {
+      masterGain.connect(audio.destination);
+    }
+  }
+  if (audio.state === 'suspended') audio.resume().catch(() => {});
+}
+
+$('master').addEventListener('input', () => {
+  const v = Number($('master').value);
+  $('masterVal').textContent = v + '%';
+  if (audio) masterGain.gain.setTargetAtTime(volumeToGain(v), audio.currentTime, 0.015);
+});
+
+/* ---------- Les sons (identiques à la V1, mais branchés sur "bus") ---------- */
+function env(g, t, peak, dur) {
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + 0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+}
+function tone(t, f0, f1, dur, peak) {
+  const o = audio.createOscillator(), g = audio.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(f0, t);
+  o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  env(g, t, peak, dur);
+  o.connect(g).connect(bus);
+  o.start(t); o.stop(t + dur + 0.02);
+}
+function noise(t, dur, peak, highpass) {
+  const s = audio.createBufferSource(), f = audio.createBiquadFilter(), g = audio.createGain();
+  s.buffer = noiseBuffer;
+  f.type = 'highpass'; f.frequency.value = highpass;
+  env(g, t, peak, dur);
+  s.connect(f).connect(g).connect(bus);
+  s.start(t); s.stop(t + dur + 0.02);
+}
+function hit(r, t) {
+  if (r === 0) tone(t, 155, 42, .24, .85);
+  if (r === 1) { noise(t, .17, .32, 1100); tone(t, 190, 110, .12, .18); }
+  if (r === 2) noise(t, .055, .16, 7000);
+  if (r === 3) { noise(t, .12, .25, 1500); noise(t + .018, .09, .12, 1500); }
+}
+
+/* "bus de lecture" : tous les sons d'une lecture y passent.
+   Pause/Stop le coupent d'un coup, y compris les sons déjà programmés. */
+function killBus() {
+  if (!bus) return;
+  const old = bus; bus = null;
+  const t = audio.currentTime;
+  old.gain.cancelScheduledValues(t);
+  old.gain.setValueAtTime(old.gain.value, t);
+  old.gain.linearRampToValueAtTime(0, t + 0.015);   // fondu très court : pas de "clic"
+  setTimeout(() => { try { old.disconnect(); } catch (e) {} }, 80);
+}
+
+/* ---------- Tempo ---------- */
+function getBpm() {
+  const n = Number($('bpm').value) || BPM_DEFAULT;
+  return Math.max(BPM_MIN, Math.min(BPM_MAX, n));
+}
+$('bpm').addEventListener('change', () => { $('bpm').value = getBpm(); });
+
+/* ---------- Lecture : programmation des sons ---------- */
+function schedule() {
+  if (state !== 'playing') return;
+  const now = audio.currentTime;
+  if (nextTime < now - 0.05) nextTime = now + 0.05;   // si la page a pris du retard, on recale (pas de rafale)
+  const stepLength = 60 / getBpm() / 4;
+  while (nextTime < now + LOOKAHEAD) {
+    const current = step;
+    names.forEach((_, r) => { if (pattern[r][current]) hit(r, nextTime); });
+    queue.push({ step: current, time: nextTime });
+    nextTime += stepLength;
+    step = (step + 1) % STEPS;
+  }
+  while (queue.length && queue[0].time < now - 1) queue.shift();   // nettoyage
+}
+
+/* Surlignage : suit l'horloge audio (pas de setTimeout qui traînent) */
+function paintLoop() {
+  if (state !== 'playing') { raf = null; return; }
+  const now = audio.currentTime;
+  let last = -1;
+  while (queue.length && queue[0].time <= now) last = queue.shift().step;
+  if (last >= 0 && last !== shownStep) highlight(last);
+  raf = requestAnimationFrame(paintLoop);
+}
+
+function stopTimers() {
+  clearInterval(timer); timer = null;
+  if (raf !== null) cancelAnimationFrame(raf);
+  raf = null;
+}
+
+/* ---------- Play / Pause / Stop ---------- */
+function start(fromStep) {
+  initAudio();
+  stopTimers(); killBus();                  // sécurité : jamais deux lectures en même temps
+  bus = audio.createGain();
+  bus.connect(masterGain);
+  queue = [];
+  step = fromStep % STEPS;
+  nextTime = audio.currentTime + 0.05;
+  state = 'playing';
+  $('play').textContent = 'Ⅱ Pause';
+  setStatus('Lecture');
+  schedule();
+  timer = setInterval(schedule, 25);        // la seule minuterie du programme
+  raf = requestAnimationFrame(paintLoop);
+}
+
+function pause() {
+  const now = audio.currentTime;
+  const next = queue.find(q => q.time > now);        // premier pas pas encore joué
+  resumeStep = next ? next.step : step;
+  state = 'paused';
+  stopTimers(); killBus();
+  queue = [];
+  $('play').textContent = '▶ Play';
+  setStatus('Pause');
+}
+
+function stop() {
+  if (audio) { stopTimers(); killBus(); }
+  state = 'stopped';
+  step = 0; resumeStep = 0; queue = [];
+  highlight(-1);
+  $('play').textContent = '▶ Play';
+  setStatus('Arrêté');
+}
+
+$('play').onclick = () => {
+  if (state === 'playing') pause();
+  else start(state === 'paused' ? resumeStep : 0);
+};
+$('stop').onclick = stop;
+
+/* ---------- Sauvegarde / chargement (sécurisés) ---------- */
+function parseSave(raw) {                    // renvoie {pattern, bpm} ou null si le contenu est invalide
+  try {
+    const s = JSON.parse(raw);
+    if (!s || !Array.isArray(s.pattern) || s.pattern.length !== names.length) return null;
+    if (!s.pattern.every(row => Array.isArray(row) && row.length === STEPS)) return null;
+    const n = Number(s.bpm);
+    const bpm = (isFinite(n) && n > 0) ? Math.max(BPM_MIN, Math.min(BPM_MAX, n)) : BPM_DEFAULT;
+    return { pattern: s.pattern.map(row => row.map(v => v === true || v === 1)), bpm };
+  } catch (e) { return null; }
+}
+
+$('save').onclick = () => {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ version: '1.1', pattern, bpm: getBpm() }));
+    setStatus('Rythme sauvegardé');
+  } catch (e) {
+    setStatus('Sauvegarde impossible (stockage du navigateur bloqué ou plein)');
+  }
+};
+
+$('load').onclick = () => {
+  let raw;
+  try { raw = localStorage.getItem(SAVE_KEY); }
+  catch (e) { setStatus('Chargement impossible (stockage du navigateur bloqué)'); return; }
+  if (raw === null) { setStatus('Aucune sauvegarde trouvée'); return; }
+  const saved = parseSave(raw);
+  if (!saved) { setStatus('Sauvegarde invalide : rythme inchangé'); return; }
+  saved.pattern.forEach((row, i) => row.forEach((v, j) => pattern[i][j] = v));
+  $('bpm').value = saved.bpm;
+  render();
+  setStatus('Rythme chargé');
+};
+
+$('clear').onclick = () => {
+  pattern.forEach(row => row.fill(false));
+  render();
+  setStatus('Rythme effacé');
+};
+
+render();
 </script></body></html>
