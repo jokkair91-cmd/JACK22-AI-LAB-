@@ -1,5 +1,5 @@
-JACK22 9.1 - CANDIDATE (interface allegee)
+JACK22 9.2 - CANDIDATE (mode Pro)
 Extraire le ZIP puis ouvrir ouvrir-dans-Edge.cmd.
 Utiliser une copie de projet. La 9.0 corrigee reste conservee, la 8.9 validee reste la version de secours.
-Accueil identique a la 8.9. Allegement dans Composer et dans les vues detaillees du Studio.
-Lire JACK22-9.1-RENDU-CLAUDE.md et ouvrir captures\AVANT-APRES.html.
+Accueil identique a la 8.9. Mode Pro : menu Projet > Mode Pro (fenetres).
+Lire JACK22-9.2-RENDU-CLAUDE.md et voir le dossier captures.

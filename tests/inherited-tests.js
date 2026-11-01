@@ -528,6 +528,89 @@
       if (tag !== key.getAttribute('aria-label') || kop !== '1') throw Error('touche jouée sans nom (' + tag + ')');
       return 'accueil intact ; Piano Roll : ' + shown.length + ' repères C, ligne et note nommées ; batterie : 1·5·9·13 + pas survolé ; Orbite : lettres masquées, touche jouée nommée';
     }],
+    ['28 Mode Pro (fenêtres)', async () => {
+      const P = window.JACK22_PRO;
+      if (!P) throw new Skip('pas de mode Pro dans cette version');
+      if (innerWidth < 900) throw new Skip('mode Pro empilé sur écran étroit : contrôlé par le test 23');
+      show('studio'); await sleep(30);
+      // Instantané de l'accueil, comparé après la sortie du mode Pro.
+      // Instantané par emplacement (l'arrangement est redessiné à la sortie : ses éléments sont recréés à l'identique).
+      const snap = () => { window.scrollTo(0, 0); const main = document.querySelector('main.dockApp'), m = new Map();
+        const key = e => { const p = []; for (let x = e; x && x !== main; x = x.parentElement) { if (x.id) { p.unshift('#' + x.id); break; } const sib = [...x.parentElement.children].filter(c => c.tagName === x.tagName); p.unshift(x.tagName.toLowerCase() + '[' + sib.indexOf(x) + ']' + (typeof x.className === 'string' && x.className ? '.' + x.className.split(' ')[0] : '')); } return p.join('>'); };
+        // Barre du haut exclue : le témoin ● de Sauvegarder y change selon l'état du projet, sans lien avec le mode Pro.
+        for (const e of main.querySelectorAll('*')) { if (e.closest('#dockDrawer') || e.closest('#dockHeader .transport') || e.closest('details:not([open])>:not(summary)')) continue; const r = e.getBoundingClientRect(); if (!r.width && !r.height) continue; const s = getComputedStyle(e); m.set(key(e), [r.left, r.top, r.width, r.height].map(Math.round).join() + '|' + s.color + '|' + s.opacity); } return m; };
+      const before = snap(), parents = new Map(P.WINS.map(id => [id, $(id)?.parentElement])), selParent = document.querySelector('.dockSelection').parentElement;
+      // Entrée par le menu Projet.
+      document.querySelector('.dockProject').open = true; $('c92Enter').click(); await sleep(150);
+      if (!P.on || !document.body.classList.contains('c92Pro')) throw Error('mode Pro non activé');
+      const open = P.WINS.filter(id => !$(id).classList.contains('c92Closed')), desk = $('dockStage').getBoundingClientRect();
+      if (open.join() !== 'timeline,c92Inspector,fx,mixer,synth') throw Error('fenêtres ouvertes : ' + open.join());
+      const rects = open.map(id => $(id).getBoundingClientRect());
+      for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) { const a = rects[i], b = rects[j]; if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 2 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 2) throw Error('chevauchement ' + open[i] + '/' + open[j]); }
+      if (rects.some(r => r.left < desk.left - 1 || r.right > desk.right + 1 || r.bottom > desk.bottom + 1)) throw Error('fenêtre hors du bureau');
+      // Déplacer (barre de titre), redimensionner (poignée), clavier ; disposition mémorisée.
+      const tl = $('timeline'), bar = tl.querySelector('.c92WinBar'), b0 = tl.getBoundingClientRect();
+      const drag = (el, dx, dy) => { const r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2; el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 21, clientX: x, clientY: y })); el.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 21, clientX: x + dx, clientY: y + dy })); el.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 21, clientX: x + dx, clientY: y + dy })); };
+      drag(bar, 40, 30); const b1 = tl.getBoundingClientRect();
+      if (Math.round(b1.left - b0.left) !== 40 || Math.round(b1.top - b0.top) !== 30) throw Error('déplacement : ' + Math.round(b1.left - b0.left) + ',' + Math.round(b1.top - b0.top));
+      const grips = [...$('dockStage').querySelectorAll(':scope>.c92Grip')], mix = $('mixer'), m0 = mix.getBoundingClientRect();
+      const mg = grips.find(g => { const r = g.getBoundingClientRect(); return Math.abs(r.right - m0.right) < 3 && Math.abs(r.bottom - m0.bottom) < 3; });
+      if (!mg) throw Error('poignée du mixeur introuvable');
+      drag(mg, -60, -40); const m1 = mix.getBoundingClientRect();
+      if (Math.round(m0.width - m1.width) !== 60 || Math.round(m0.height - m1.height) !== 40) throw Error('redimensionnement mixeur');
+      bar.focus(); bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true, cancelable: true })); const b2 = tl.getBoundingClientRect();
+      if (Math.round(b1.left - b2.left) !== 16) throw Error('déplacement au clavier');
+      const saved = JSON.parse(localStorage.getItem('jack22.pro.layout.v1') || '{}');
+      if (!saved.timeline || !saved.mixer) throw Error('disposition non mémorisée');
+      // Fermer / rouvrir une fenêtre.
+      const fx = $('fx'); fx.querySelector('.c92WinClose').click();
+      if (!fx.classList.contains('c92Closed') || $('c92Bar').querySelector('[data-win="fx"]').getAttribute('aria-pressed') !== 'false') throw Error('fermeture Effets');
+      $('c92Bar').querySelector('[data-win="fx"]').click(); if (fx.classList.contains('c92Closed') || fx.offsetWidth < 200) throw Error('réouverture Effets');
+      // Menu « Réglages ▾ » de l'arrangement : entier et cliquable par-dessus la fenêtre.
+      const pop = tl.querySelector('details.dockPopup'); pop.open = true; await sleep(60);
+      const pbEl = pop.querySelector('.dockPopupBody'), pb = pbEl.getBoundingClientRect(), inspect = $('j90Inspect').getBoundingClientRect();
+      const hit = document.elementFromPoint(inspect.left + inspect.width / 2, inspect.top + inspect.height / 2);
+      // Le bas du menu aussi doit être au premier plan (pas sous une autre fenêtre).
+      const low = document.elementFromPoint(pb.left + pb.width / 2, Math.min(pb.bottom, innerHeight) - 6);
+      pop.open = false; await sleep(30);
+      if (pb.right > innerWidth + 1 || pb.bottom > innerHeight + 1 || !(hit === $('j90Inspect') || $('j90Inspect').contains(hit))) throw Error('menu Réglages coupé ou recouvert');
+      if (!low || !pbEl.contains(low)) throw Error('bas du menu Réglages recouvert par ' + (low ? (low.closest('section')?.id || low.tagName) : 'rien'));
+      // Sortie (sans avoir touché au morceau) : chaque panneau à sa place, accueil identique.
+      $('c92Bar').querySelector('.c92Exit').click(); await sleep(250);
+      if (P.on || document.body.classList.contains('c92Pro')) throw Error('sortie du mode Pro');
+      for (const [id, parent] of parents) if ($(id) && $(id).parentElement !== parent) throw Error(id + ' pas revenu à sa place');
+      if (document.querySelector('.dockSelection').parentElement !== selParent || $('c92Inspector') || $('dockStage').querySelector('.c92Grip,.c92WinBar')) throw Error('restes du mode Pro');
+      const after = snap(); let diff = 0, only = 0, kinds = []; for (const [k, v] of before) { const w = after.get(k); if (w === undefined) { only++; continue; } if (w !== v) { diff++; if (kinds.length < 3) kinds.push(k.split('>').pop()); } } for (const k of after.keys()) if (!before.has(k)) only++;
+      if (diff || only) throw Error('accueil modifié après la sortie : ' + diff + ' écarts, ' + only + ' en plus/en moins (' + kinds.join(', ') + ')');
+      // Retour en mode Pro : disposition retrouvée.
+      P.enter(); await sleep(150); const back = $('timeline').getBoundingClientRect();
+      if (Math.abs(back.left - b2.left) > 2 || Math.abs(back.top - b2.top) > 2) throw Error('disposition non restaurée');
+      // Fonctions dans les fenêtres : lecture, Mute, inspecteur, Piano Roll et batterie.
+      $('play').click(); await sleep(250); const playing = state === 'playing'; stopAll(); await sleep(100);
+      if (!playing) throw Error('lecture en mode Pro');
+      $('muteKick').click(); const muted = $('muteKick').getAttribute('aria-pressed') === 'true'; $('muteKick').click();
+      if (!muted) throw Error('Mute dans la fenêtre Mixeur');
+      const lane = document.querySelector('#tlRows .tl-lane[data-ti="0"]'); lane.scrollIntoView({ block: 'nearest' }); const lr = lane.getBoundingClientRect(), n0 = song.arrangement.length;
+      lane.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: lr.left + 5, clientY: lr.top + lr.height / 2 }));
+      // Le studio sélectionne un bloc à l'appui (pointerdown), pas au clic.
+      { const blk = document.querySelector('#tlRows .tl-block:not(.tl-aud)'), br = blk.getBoundingClientRect(), o = { bubbles: true, cancelable: true, button: 0, pointerId: 23, clientX: br.left + 6, clientY: br.top + br.height / 2 };
+        blk.dispatchEvent(new PointerEvent('pointerdown', o)); blk.dispatchEvent(new PointerEvent('pointerup', o)); document.body.dispatchEvent(new PointerEvent('pointerup', o)); }
+      await sleep(400);
+      const ins = $('c92Inspector');
+      if (!/Piste/.test(ins.textContent) || !/Pattern/.test(ins.textContent)) throw Error('inspecteur sans description du bloc');
+      if (!ins.contains($('tlDup'))) throw Error('commandes de sélection absentes de l’inspecteur');
+      const n1 = song.arrangement.length; $('tlDup').click(); if (song.arrangement.length !== n1 + 1) throw Error('Dupliquer depuis l’inspecteur');
+      $('c92Bar').querySelector('[data-win="roll"]').click(); await sleep(60);
+      const g = $('rollGrid'), gr = g.getBoundingClientRect(), r0 = roll.notes.length;
+      g.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 22, clientX: gr.left + 40, clientY: gr.top + 40 })); g.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 22 }));
+      if (roll.notes.length !== r0 + 1) throw Error('note du Piano Roll en mode Pro');
+      $('c92Bar').querySelector('[data-win="dockBeat"]').click(); await sleep(30);
+      const step = document.querySelector('[aria-label="CLAP pas 3"]'), on0 = step.classList.contains('active'); step.click();
+      if (step.classList.contains('active') === on0) throw Error('pas de batterie en mode Pro');
+      P.exit(); await sleep(100);
+      for (const [id, parent] of parents) if ($(id) && $(id).parentElement !== parent) throw Error(id + ' pas revenu à sa place après usage');
+      return '5 fenêtres sans chevauchement, déplacement/poignée/clavier OK, disposition mémorisée, menu Réglages entier, lecture/Mute/inspecteur/Piano Roll/batterie OK, accueil identique après sortie (' + before.size + ' éléments)';
+    }],
     ['21 Aucune erreur JavaScript', async () => {
       const real = errors.filter(e => !/^alert:/.test(e));
       if (real.length) throw Error(real.slice(0, 3).join(' | '));
