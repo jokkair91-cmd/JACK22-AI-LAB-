@@ -1,0 +1,19 @@
+﻿JACK22 STUDIO 8.8 - VERSION FINALE (design ChatGPT + controle et fonctions Claude)
+
+Extraire le ZIP, puis ouvrir JACK22-STUDIO-LOT8.8-COMPACT.html dans Edge
+(ou double-cliquer sur ouvrir-dans-Edge.cmd).
+Importer une COPIE du projet portable pour reprendre un morceau.
+
+Interface : celle de la 8.8 de ChatGPT, inchangee.
+ - Onglets fins en haut de chaque espace pour changer de vue.
+ - Bouton moins : replier un panneau ; fleches : l agrandir.
+Ajouts de Claude :
+ - Barre d espace = Play / Pause. Ctrl+S = Sauvegarder.
+ - Sampler : touches grisees tant qu aucun son n est disponible.
+ - Telephone : le panneau des prises voix ne passe plus sous les effets.
+
+Tests : tous les tests applicables reussis dans Chromium, a 1536, 1366, 1024 et 390 px.
+Restent a verifier : Edge, vrai micro, ecoute, tactile.
+Details : JACK22-LOT8.8-RENDU-CLAUDE.md (et le bilan et l audit de ChatGPT).
+Le dossier web est pour un futur hebergement HTTPS, aucun site publie.
+Le dossier tests contient la suite de tests.
