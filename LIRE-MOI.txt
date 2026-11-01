@@ -1,5 +1,5 @@
-JACK22 9.0 — CANDIDATE
+JACK22 9.1 - CANDIDATE (interface allegee)
 Extraire le ZIP puis ouvrir ouvrir-dans-Edge.cmd.
-Utiliser une copie de projet. La 8.9 validée reste la référence stable.
-Inspecter/zoom/annuler dans l’arrangement ; bibliothèque et versions dans Projet.
-Lire BILAN-9.0.md avant utilisation.
+Utiliser une copie de projet. La 9.0 corrigee reste conservee, la 8.9 validee reste la version de secours.
+Accueil identique a la 8.9. Allegement dans Composer et dans les vues detaillees du Studio.
+Lire JACK22-9.1-RENDU-CLAUDE.md et ouvrir captures\AVANT-APRES.html.

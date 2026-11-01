@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JACK22 9.1 · Avant / après</title>
+<style>
+:root{--bg:#17181a;--panel:#202124;--line:#2c2e33;--text:#eceef1;--muted:#a9aeb6;--amber:#f5b13f;--red:#d8343f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 "Segoe UI",Inter,Arial,sans-serif}
+main{max-width:1680px;margin:0 auto;padding:28px 16px 60px}
+h1{font-size:26px;margin:0 0 4px}h1 span{color:var(--red)}
+.intro{color:var(--muted);margin:0 0 28px;max-width:900px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin:0 0 22px}
+h2{font-size:17px;margin:0 0 6px}
+.why{color:var(--muted);margin:0 0 14px;max-width:1000px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+figure{margin:0}
+figure img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:8px}
+figcaption{font-size:13px;color:var(--muted);margin-top:6px}
+figcaption b{color:var(--text)}
+ul{margin:12px 0 0;padding-left:20px}li{margin:3px 0}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:10px;background:#2b2414;color:var(--amber);border:1px solid #6b5420;margin-left:6px;vertical-align:2px}
+@media(max-width:800px){.pair{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>JACK<span>22</span> STUDIO · 9.1 candidate — avant / après</h1>
+<p class="intro">Les captures ont été prises à la taille d'écran de Bob (1249 × 848 pixels de page, soit l'affichage Windows à 150 %), avec le même contenu de démonstration. À gauche, la 9.0 corrigée (ou la 8.9 validée pour l'accueil) ; à droite, la 9.1.</p>
+
+<section>
+<h2>1. Accueil <span class="tag">inchangé</span></h2>
+<p class="why">Les deux captures sont identiques octet par octet. La comparaison de 408 éléments à six tailles d'écran ne relève aucun écart de position, de taille, de couleur, d'opacité ni de police. Le clavier de l'accueil garde ses repères C4 / C5 et ses lettres.</p>
+<div class="pair">
+<figure><img src="1-accueil-avant-8.9.jpg" alt="Accueil de la 8.9 validée"><figcaption><b>Avant</b> — 8.9 validée</figcaption></figure>
+<figure><img src="1-accueil-apres-9.1.jpg" alt="Accueil de la 9.1"><figcaption><b>Après</b> — 9.1 candidate</figcaption></figure>
+</div>
+</section>
+
+<section>
+<h2>2. Composer · Piano Roll</h2>
+<p class="why">Avant : les 72 lignes portaient chacune un nom de note (B6, A#6, A6…). Après :</p>
+<div class="pair">
+<figure><img src="2-piano-roll-avant.jpg" alt="Piano Roll avant"><figcaption><b>Avant</b> — un nom sur chaque ligne</figcaption></figure>
+<figure><img src="2-piano-roll-apres.jpg" alt="Piano Roll après"><figcaption><b>Après</b> — repères C6, C5… ; ligne survolée « B5 » en ambre ; note sélectionnée « C#6 »</figcaption></figure>
+</div>
+<ul>
+<li>Seuls les « C » restent écrits, un repère discret par octave, avec un fin trait de séparation.</li>
+<li>La ligne sous la souris s'allume en ambre dans la colonne (« B5 » sur la capture).</li>
+<li>La note sélectionnée a un contour ambre et une étiquette avec son nom (« C#6 ») ; une note survolée affiche son nom discrètement.</li>
+<li>Les couleurs des notes, la grille et toutes les commandes sont inchangées.</li>
+</ul>
+</section>
+
+<section>
+<h2>3. Composer · Batterie</h2>
+<p class="why">Avant : 16 numéros de pas, et les pistes flottaient au milieu du panneau, loin de la règle. Après :</p>
+<div class="pair">
+<figure><img src="3-batterie-avant.jpg" alt="Batterie avant"><figcaption><b>Avant</b> — 16 numéros, grand vide sous la règle</figcaption></figure>
+<figure><img src="3-batterie-apres.jpg" alt="Batterie après"><figcaption><b>Après</b> — temps 1, 5, 9, 13 ; pas survolé « 7 » en ambre ; pistes sous la règle</figcaption></figure>
+</div>
+<ul>
+<li>Seuls les débuts de temps (1, 5, 9, 13) sont numérotés.</li>
+<li>Le numéro du pas sous la souris s'affiche en ambre, et le pas est encadré.</li>
+<li>Les pistes sont collées à la règle (16 px au lieu d'un grand vide).</li>
+</ul>
+</section>
+
+<section>
+<h2>4. Studio · vue détaillée Orbite <span class="tag">hors accueil</span></h2>
+<p class="why">Cette vue s'ouvre par Projet → « Afficher les vues détaillées du Studio » → Orbite. Avant : la lettre du clavier d'ordinateur sur chaque touche. Après :</p>
+<div class="pair">
+<figure><img src="4-orbite-avant.jpg" alt="Vue Orbite avant"><figcaption><b>Avant</b> — lettres A S D F… et Z E T… sur toutes les touches</figcaption></figure>
+<figure><img src="4-orbite-apres.jpg" alt="Vue Orbite après"><figcaption><b>Après</b> — touches nettes ; C4 / C5 discrets ; touche jouée « G4 » avec sa lettre</figcaption></figure>
+</div>
+<ul>
+<li>Les lettres sont masquées ; les repères C4 et C5 restent, plus discrets.</li>
+<li>La touche survolée ou jouée affiche son nom (« G4 ») et sa lettre de clavier.</li>
+<li>Le clavier de l'accueil, lui, n'est pas touché.</li>
+</ul>
+</section>
+</main>
+</body>
+</html>

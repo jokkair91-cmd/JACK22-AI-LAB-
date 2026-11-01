@@ -1,4 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="jack22-build" content="VISION8.9-ORBITE"><meta name="viewport" content="width=device-width,initial-scale=1"><title>9.0 CANDIDATE · JACK22 STUDIO · Orbite · Lot 8.9</title><style>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="jack22-build" content="VISION8.9-ORBITE"><meta name="viewport" content="width=device-width,initial-scale=1"><title>9.1 CANDIDATE · JACK22 STUDIO · Orbite · Lot 8.9</title><style>
 :root{font-family:Inter,Arial,sans-serif;color:#f5f5f5;background:#101014}*{box-sizing:border-box}body{margin:0}.app{max-width:1100px;margin:auto;padding:28px}header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}h1{font-size:28px;letter-spacing:2px;margin:0}h1 span{color:#ff4545}.sub{color:#999;font-size:13px}button,input{font:inherit}button{cursor:pointer;border:0;border-radius:8px;padding:12px 17px;background:#292932;color:#fff}button:hover{filter:brightness(1.2)}button.primary{background:#e3313d;font-weight:700}.transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:28px 0;background:#1b1b22;padding:16px;border-radius:12px}input[type=number]{width:75px;background:#111116;border:1px solid #444;color:white;padding:10px;border-radius:7px}.panel{background:#1b1b22;padding:20px;border-radius:14px;overflow-x:auto}.legend{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;min-width:780px;margin-bottom:10px;color:#999;font-size:12px;text-align:center}.track{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;align-items:center;min-width:780px;margin-bottom:12px}.track-label{font-weight:700;font-size:13px}.step{aspect-ratio:1;border-radius:6px;background:#34343d;padding:0;border:1px solid #45454e}.step.active{background:#e3313d;border-color:#ff6c74}.step.playing{outline:3px solid #fff;outline-offset:1px}.step.beat{background:#454550}.step.beat.active{background:#f0444e}footer{color:#777;font-size:12px;margin-top:20px}.status{color:#bbb;font-size:13px}
 /* V1.1 : volume master (même style que le reste) */
 input[type=range]{width:120px;accent-color:#e3313d;cursor:pointer}.master-val{min-width:42px;color:#bbb;font-size:13px}
@@ -3968,5 +3968,91 @@ async function history(){const box=show('Versions du projet');const p=document.c
 async function render(){list.replaceChildren();try{for(const r of await versions()){const row=document.createElement('div');row.className='j90LibraryRow';const t=document.createElement('span');t.textContent=r.label+' · '+new Date(r.time).toLocaleString('fr-FR')+' · '+(r.bytes/1048576).toFixed(1)+' Mo';row.append(t);button('Restaurer',async()=>{try{await restoreVersion(r.id)}catch(e){say(e.message)}},row);button('Supprimer',async()=>{if(versionBusy||locked())return say('Une opération est en cours.');if(confirm('Supprimer cette version de l’historique ?')){await transaction('readwrite',s=>s.delete(r.id));await render()}},row);list.append(row)}}catch(e){say('Historique indisponible : '+e.message)}}await render();}
 const menu=document.querySelector('.dockProject .dockPopupBody');button('Versions du projet…',()=>history().catch(e=>say(e.message)),menu);button('Bibliothèque de sons…',library,menu);
 window.JACK22_WORKFLOW={inspect,zoom,library,history,versions,captureVersion,restoreVersion,decodeVersion,get busy(){return versionBusy}};
+})();
+</script><style id="claude90Styles">
+/* Contre-expertise 9.0 (Claude) : accueil identique à la 8.9 validée, trois défauts corrigés. */
+.dockTimelineSettings .claude90Edit #j90Zoom{display:inline-flex;gap:3px;align-items:center}
+</style><script id="claude90Module">
+(() => {
+ 'use strict';
+ const $c=id=>document.getElementById(id);
+ // 1. Accueil identique : les outils de l'arrangement passent dans « Réglages ▾ » (ligne ÉDITION). Ctrl+Z / Ctrl+Y restent globaux.
+ const settings=document.querySelector('#timeline .dockTimelineSettings'),tools=['j90Inspect','j90Undo','j90Redo','j90Zoom'].map($c);
+ if(settings&&tools.every(Boolean)){
+  const row=document.createElement('div');row.className='tl-bar claude90Edit';
+  const lbl=document.createElement('span');lbl.className='tl-lbl';lbl.textContent='ÉDITION';
+  row.append(lbl,...tools);settings.prepend(row);
+  // Deux « 100 % » côte à côte prêtaient à confusion : le bouton devient « Taille normale ».
+  const normal=[...$c('j90Zoom').querySelectorAll('button')].find(b=>b.textContent.trim()==='100 %');
+  if(normal){normal.textContent='Taille normale';normal.title='Zoom de l’arrangement à 100 %';}
+  $c('j90Inspect').title='Modifier le bloc ou le clip sélectionné dans l’arrangement';
+ }
+ // 2. Annuler / Rétablir de l'arrangement : recalculés aussi après la lecture ou une opération, pas seulement quand l'historique change.
+ const locked=()=>{try{return persistBusy||exporting||rec.state!=='idle'||window.Jack22Voice.state.active||window.Jack22Lot3.pending||state!=='stopped';}catch(e){return false;}};
+ function syncHistory(){const u=$c('j90Undo'),r=$c('j90Redo'),vu=$c('v8Undo'),vr=$c('v8Redo');if(!u||!r||!vu||!vr)return;const on=locked();u.disabled=on||vu.disabled;r.disabled=on||vr.disabled;}
+ setInterval(()=>{if(!document.hidden)syncHistory();},400);
+ document.addEventListener('click',()=>setTimeout(syncHistory,0));document.addEventListener('keyup',()=>setTimeout(syncHistory,0));syncHistory();
+ // 3. Fenêtre ouverte : la barre d'espace ne lance plus la lecture derrière elle (sauf sur un bouton ou un champ de la fenêtre).
+ window.addEventListener('keydown',e=>{
+  if(e.code!=='Space'||!document.querySelector('dialog[open]'))return;
+  const t=e.target;if(t&&(/^(INPUT|SELECT|TEXTAREA|BUTTON|SUMMARY|A)$/.test(t.tagName)||t.isContentEditable))return;
+  e.preventDefault();
+ },true);
+ // 4. Bibliothèque : le curseur va dans le champ de recherche dès l'ouverture.
+ const dialog=$c('j90Dialog');
+ if(dialog)new MutationObserver(()=>{if(!dialog.open)return;setTimeout(()=>{const s=dialog.querySelector('#j90Body input[type=search]');if(s&&dialog.open&&document.activeElement!==s)s.focus();},0);}).observe(dialog,{attributes:true,attributeFilter:['open']});
+ window.JACK22_C90={version:'9.0-claude',syncHistory};
+})();
+</script><style id="claude91Styles">
+/* 9.1 — interface allégée (Claude). Uniquement l'onglet Composer et les vues détaillées du Studio :
+   l'accueil (Studio complet) n'est jamais concerné. Couleurs de la charte JACK22. */
+
+/* Piano Roll : un seul repère par octave (les « C »), les autres noms de notes au survol. */
+#dockComposer .roll-key{font:500 9.5px/16px Consolas,"Cascadia Mono",monospace;letter-spacing:.3px;padding-left:6px}
+#dockComposer .roll-key:not(.c){color:transparent}
+#dockComposer .roll-key.c{color:#a9aeb6;font-weight:700;border-top:1px solid #3a3d43}
+#dockComposer .roll-key:hover,#dockComposer .roll-key.c91Row{color:#f5b13f!important;background:#2a2c30!important}
+/* Notes : contour ambre et nom de la note pour la sélection ; nom discret au survol. */
+#dockComposer .rn.sel{outline:2px solid #f5b13f!important;outline-offset:0;box-shadow:0 0 0 3px #f5b13f33,0 0 12px #f5b13f66;z-index:3}
+#dockComposer .rn.sel::after,#dockComposer .rn:hover::after{content:attr(data-note);position:absolute;left:-1px;bottom:100%;margin-bottom:3px;padding:1px 5px;border-radius:3px;font:600 10px/14px Consolas,"Cascadia Mono",monospace;white-space:nowrap;pointer-events:none;z-index:4}
+#dockComposer .rn:hover::after{color:#eceef1;background:#202124;border:1px solid #3a3d43}
+#dockComposer .rn.sel::after{color:#241706;background:#f5b13f;border:1px solid #f5b13f}
+
+/* Batterie : numéros des temps seulement (1, 5, 9, 13), le pas survolé s'affiche ; pistes collées à la règle. */
+#dockComposer #dockBeat .legend>div{font:500 10px/1.4 Consolas,"Cascadia Mono",monospace}
+#dockComposer #dockBeat .legend>div:not(:first-child){color:transparent}
+#dockComposer #dockBeat .legend>div:nth-child(4n+2){color:#7e848d}
+#dockComposer #dockBeat .legend>div.c91Col{color:#f5b13f!important}
+#dockComposer #dockBeat #tracks{flex:none!important;justify-content:flex-start!important;align-content:flex-start!important}
+#dockComposer #dockBeat .step:hover{outline:1px solid #f5b13f;outline-offset:1px}
+
+/* Vue détaillée Orbite : touches sans lettres ni noms ; repère C conservé ; note et lettre au survol ou à l'appui. */
+#dockStage.compact88StudioFocus #piano .kk{opacity:0}
+#dockStage.compact88StudioFocus #piano .kn{opacity:.55}
+#dockStage.compact88StudioFocus #piano .key:hover .kk,#dockStage.compact88StudioFocus #piano .key.down .kk{opacity:1}
+#dockStage.compact88StudioFocus #piano .key:hover::after,#dockStage.compact88StudioFocus #piano .key.down::after{content:attr(aria-label);position:absolute;left:50%;top:6px;transform:translateX(-50%);padding:1px 5px;border-radius:3px;font:600 10px/14px Consolas,"Cascadia Mono",monospace;color:#241706;background:#f5b13f;pointer-events:none;z-index:5}
+</style><script id="claude91Module">
+(() => {
+ 'use strict';
+ const $c=id=>document.getElementById(id);
+ // Nom de chaque note du Piano Roll, repris de son info-bulle (« E6 · 2 pas » → « E6 »).
+ const grid=$c('rollGrid'),keyCol=$c('rollKeyCol');
+ function label(){if(!grid)return;for(const n of grid.querySelectorAll('.rn')){const t=(n.getAttribute('title')||'').split('·')[0].trim();if(t&&n.dataset.note!==t)n.dataset.note=t;}}
+ if(grid){new MutationObserver(label).observe(grid,{childList:true,subtree:true,attributes:true,attributeFilter:['title']});label();}
+ // Survol de la grille : la ligne de la note pointée s'allume dans la colonne des notes.
+ let lit=null;
+ function light(el){if(lit===el)return;lit?.classList.remove('c91Row');lit=el;el?.classList.add('c91Row');}
+ if(grid&&keyCol&&typeof rollPos==='function'&&typeof ROLL_RH==='number'){
+  grid.addEventListener('pointermove',e=>{try{const{y}=rollPos(e);light(keyCol.children[Math.floor(y/ROLL_RH)]||null);}catch(x){}});
+  grid.addEventListener('pointerleave',()=>light(null));
+ }
+ // Survol d'un pas de batterie : son numéro s'affiche dans la règle.
+ const tracks=$c('tracks'),legend=document.querySelector('#dockBeat .legend');let col=null;
+ function mark(el){if(col===el)return;col?.classList.remove('c91Col');col=el;el?.classList.add('c91Col');}
+ if(tracks&&legend){
+  tracks.addEventListener('pointerover',e=>{const s=e.target.closest('.step');if(!s){mark(null);return;}const i=[...s.parentElement.querySelectorAll('.step')].indexOf(s);mark(legend.children[i+1]||null);});
+  tracks.addEventListener('pointerleave',()=>mark(null));
+ }
+ window.JACK22_C91={version:'9.1',label};
 })();
 </script></body></html>

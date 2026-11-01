@@ -305,7 +305,7 @@
       // Sous-vues : chaque bouton ne montre que ses panneaux, « Vue complète » les remet tous.
       let views = 0;
       for (const pane of document.querySelectorAll('.dockPane')) {
-        show(pane.id); const grid = pane.querySelector('.compact88Grid');
+        show(pane.id); await sleep(20); const grid = pane.querySelector('.compact88Grid');
         for (const b of pane.querySelectorAll('[data-c88-view]')) {
           b.click(); views++;
           const want = (b.dataset.c88Targets || '').split(' ').filter(Boolean);
@@ -319,7 +319,8 @@
       // Replier puis agrandir chaque panneau d'outil.
       let panels = 0;
       for (const pane of document.querySelectorAll('.dockPane')) {
-        show(pane.id);
+        // Le mode compact est rétabli par un observateur quand on quitte l'accueil : on laisse passer ce tour.
+        show(pane.id); await sleep(20);
         for (const panel of pane.querySelectorAll('.compact88Panel')) {
           const fold = panel.querySelector('[data-c88-action="fold"]'), focus = panel.querySelector('[data-c88-action="focus"]');
           if (!fold || !focus || panel.hidden) continue; panels++;
@@ -464,6 +465,68 @@
       if (faders.some(h => h < 60)) notes.push('faders courts : ' + faders.join('/') + ' px');
       window.scrollTo(0, 0);
       return '7 onglets, messages séparés, ● OK, bandeau réductible/réaffichable, vues détaillées et liens Voix ⇄ Paroles OK, piano 24 touches entières (' + ph + ' px), faders ' + faders.join('/') + ' px' + (notes.length ? ' — À NOTER : ' + notes.join(' ; ') : '');
+    }],
+    ['26 Corrections 9.0 (Claude)', async () => {
+      if (!window.JACK22_C90 || !window.JACK22_WORKFLOW) throw new Skip('pas d’outils 9.0 corrigés dans cette version');
+      show('studio'); await sleep(30);
+      // Outils de l'arrangement dans « Réglages ▾ », rien d'ajouté sous la timeline.
+      const sel = document.querySelector('.dockSelection'), set = document.querySelector('#timeline .dockTimelineSettings');
+      for (const id of ['j90Inspect', 'j90Zoom', 'j90Undo', 'j90Redo']) { if (sel.contains($(id)) || !set.contains($(id))) throw Error(id + ' pas dans Réglages'); }
+      const normal = [...$('j90Zoom').querySelectorAll('button')].find(b => b.textContent === 'Taille normale');
+      if (!normal) throw Error('bouton Taille normale absent');
+      $('j90Zoom').querySelector('button').click(); normal.click();
+      if (TL_BAR_W !== 56 || $('j90ZoomValue').textContent !== '100 %') throw Error('Taille normale ne remet pas 100 %');
+      // Annuler de l'arrangement disponible après une lecture.
+      const setv = (id, v) => { const f = $(id); f.value = v; f.dispatchEvent(new Event('input', { bubbles: true })); f.dispatchEvent(new Event('change', { bubbles: true })); };
+      setv('mixSnare', 70); await sleep(450); $('play').click(); await sleep(400); setv('mixKick', 40); await sleep(450); stopAll(); await sleep(600);
+      if ($('j90Undo').disabled || $('v8Undo').disabled) throw Error('Annuler grisé après la lecture');
+      $('j90Undo').click(); await sleep(300);
+      if ($('mixKick').value === '40') throw Error('Annuler sans effet après la lecture');
+      setv('mixKick', 100); setv('mixSnare', 100); await sleep(450);
+      // Fenêtre ouverte : la barre d'espace ne lance pas la lecture ; la recherche reçoit le curseur.
+      const d = $('j90Dialog'); document.querySelector('.dockProject .dockPopupBody button:last-child')?.click(); await sleep(150);
+      if (!d.open) { window.JACK22_WORKFLOW.library(); await sleep(150); }
+      if (document.activeElement !== d.querySelector('input[type=search]')) throw Error('recherche sans curseur à l’ouverture');
+      document.activeElement.blur(); document.body.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space', key: ' ', bubbles: true, cancelable: true })); await sleep(250);
+      const st = state; d.close(); stopAll();
+      if (st !== 'stopped') throw Error('Espace a lancé la lecture derrière la fenêtre');
+      return 'outils dans Réglages ▾ (accueil inchangé), Taille normale = 100 %, Annuler disponible après lecture, Espace bloqué sous fenêtre, curseur dans la recherche';
+    }],
+    ['27 Interface allégée 9.1 (Claude)', async () => {
+      if (!window.JACK22_C91) throw new Skip('pas d’interface allégée 9.1 dans cette version');
+      const visible = el => getComputedStyle(el).color !== 'rgba(0, 0, 0, 0)';
+      // Accueil : clavier inchangé (lettres visibles).
+      show('studio'); await sleep(30);
+      if ([...$('piano').querySelectorAll('.kk')].some(k => getComputedStyle(k).opacity === '0')) throw Error('lettres du piano masquées sur l’accueil');
+      // Piano Roll : seuls les repères d'octave (C) sont écrits ; ligne survolée et note sélectionnée nommées.
+      show('dockComposer'); await sleep(30);
+      const keys = [...$('rollKeyCol').querySelectorAll('.roll-key')], shown = keys.filter(visible).map(k => k.textContent);
+      if (!shown.length || shown.some(t => !/^C-?\d$/.test(t))) throw Error('colonne des notes : ' + shown.join(' '));
+      const n0 = roll.notes.length, g = $('rollGrid'); g.scrollIntoView({ block: 'center' }); const r = g.getBoundingClientRect();
+      const p = (t, x, y) => g.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, button: 0, pointerId: 9, clientX: r.left + x, clientY: r.top + y }));
+      p('pointerdown', 70, 88); p('pointerup', 70, 88); await sleep(60);
+      const sel = g.querySelector('.rn.sel');
+      if (roll.notes.length !== n0 + 1 || !sel || !sel.dataset.note || getComputedStyle(sel, '::after').content.replace(/"/g, '') !== sel.dataset.note) throw Error('note sélectionnée sans nom');
+      p('pointermove', 300, 88); await sleep(150);
+      const lit = $('rollKeyCol').querySelector('.c91Row');
+      if (!lit || lit.textContent !== sel.dataset.note) throw Error('ligne survolée : ' + (lit?.textContent || 'aucune') + ' au lieu de ' + sel.dataset.note);
+      p('pointerleave', 0, 0); $('rollUndo').click(); await sleep(30);
+      // Batterie : temps 1, 5, 9, 13 seuls ; pas survolé affiché ; pistes sous la règle.
+      const legend = document.querySelector('#dockBeat .legend'), nums = [...legend.children].slice(1).filter(visible).map(d => d.textContent);
+      if (nums.join() !== '1,5,9,13') throw Error('règle de la batterie : ' + nums.join());
+      const st = $('tracks').querySelector('.track').querySelectorAll('.step')[6]; st.dispatchEvent(new PointerEvent('pointerover', { bubbles: true })); await sleep(150);
+      if (legend.querySelector('.c91Col')?.textContent !== '7') throw Error('pas survolé non affiché');
+      $('tracks').dispatchEvent(new PointerEvent('pointerleave'));
+      // Vue détaillée Orbite : lettres masquées, nom et lettre de la touche jouée.
+      show('studio'); await sleep(30); document.body.classList.add('referenceViews');
+      document.querySelector('[data-c88-studio="synth"]').click(); await sleep(60);
+      const kk = [...$('piano').querySelectorAll('.kk')];
+      if (kk.some(k => getComputedStyle(k).opacity !== '0')) throw Error('lettres visibles en vue Orbite');
+      const key = $('piano').querySelector('.key'); key.classList.add('down'); await sleep(150);
+      const tag = getComputedStyle(key, '::after').content.replace(/"/g, ''), kop = getComputedStyle(key.querySelector('.kk')).opacity;
+      key.classList.remove('down'); document.querySelector('[data-c88-studio="all"]').click(); document.body.classList.remove('referenceViews'); await sleep(30);
+      if (tag !== key.getAttribute('aria-label') || kop !== '1') throw Error('touche jouée sans nom (' + tag + ')');
+      return 'accueil intact ; Piano Roll : ' + shown.length + ' repères C, ligne et note nommées ; batterie : 1·5·9·13 + pas survolé ; Orbite : lettres masquées, touche jouée nommée';
     }],
     ['21 Aucune erreur JavaScript', async () => {
       const real = errors.filter(e => !/^alert:/.test(e));
