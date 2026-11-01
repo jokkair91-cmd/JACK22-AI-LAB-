@@ -371,6 +371,100 @@
       if (bad.length) throw Error(bad.length + '/' + n + ' commandes inaccessibles : ' + bad.slice(0, 8).join(' | '));
       return n + ' commandes visibles, toutes atteignables à ' + innerWidth + '×' + innerHeight;
     }],
+    ['24 Ergonomie 8.9 (barres, projet, étapes)', async () => {
+      const E = window.JACK22_C89;
+      if (!E || E.version !== '8.9') throw new Skip('pas de barre unique ni d’étapes 8.9 (Claude) dans cette version');
+      show('studio');
+      // Barres : étapes, vues du Studio et messages sur une seule ligne.
+      const bar = $('claude89Bar');
+      if (!bar || !bar.contains($('dockNav')) || !bar.contains($('dockMessages'))) throw Error('barre unique absente');
+      E.setWarn(true); const topOpen = Math.round($('dockContent').getBoundingClientRect().top);
+      E.setWarn(false); const top = Math.round($('dockContent').getBoundingClientRect().top);
+      if (getComputedStyle($('storeWarn')).display !== 'none' || top >= topOpen) throw Error('bandeau toujours affiché une fois réduit (' + topOpen + ' → ' + top + ' px)');
+      E.setWarn(true);
+      // Étapes : 4 onglets visibles + ⚙ ; Paroles regroupé avec Voix.
+      const visible = [...$('dockNav').querySelectorAll('[data-dock-pane]')].filter(b => b.offsetParent).map(b => b.dataset.dockPane);
+      if (visible.join() !== 'dockComposer,studio,dockVoices,dockExport') throw Error('étapes : ' + visible.join());
+      document.querySelector('[data-claude89-go="dockWords"]').click(); await sleep(20);
+      if ($('dockWords').hidden) throw Error('lien vers Paroles');
+      if (document.querySelector('[data-dock-pane="dockVoices"]').getAttribute('aria-pressed') !== 'true') throw Error('Voix & paroles non marqué sur Paroles');
+      document.querySelector('[data-claude89-go="dockVoices"]').click();
+      if ($('dockVoices').hidden) throw Error('lien retour vers Voix');
+      const more = document.querySelector('.claude89More'); more.open = true;
+      more.querySelector('button').click(); await sleep(20);
+      if ($('dockTools').hidden || more.open) throw Error('menu ⚙ → Outils');
+      if (!more.classList.contains('claude89Active')) throw Error('⚙ non marqué sur Outils');
+      show('studio');
+      // Projet : témoin ● après une modification, effacé après Enregistrer.
+      const bpm = $('bpm'), v0 = bpm.value; bpm.value = Number(v0) + 1; bpm.dispatchEvent(new Event('change', { bubbles: true })); E.syncDirty();
+      if (!$('save').classList.contains('claude89Dirty')) throw Error('témoin ● absent après modification');
+      await ProjectPersistence.save(); await until(() => !persistBusy, 20000); E.syncDirty();
+      if ($('save').classList.contains('claude89Dirty')) throw Error('témoin ● reste après Enregistrer');
+      const menu = document.querySelector('.dockProject .dockPopupBody');
+      for (const id of ['projExport', 'load', 'projImport', 'clear']) if (!menu.contains($(id))) throw Error(id + ' hors du menu Projet');
+      // Bandeau : réduit en pastille après une copie réussie sur l'ordinateur.
+      E.setWarn(true); const from = downloads.length; await ProjectTransfer.exportProject(); await nextDownload(from, 30000);
+      const pill = document.querySelector('.claude89Pill');
+      if (getComputedStyle($('storeWarn')).display !== 'none' || !pill.offsetParent) throw Error('bandeau non réduit après la copie');
+      pill.click();
+      if (getComputedStyle($('storeWarn')).display === 'none' || pill.offsetParent) throw Error('la pastille ne rouvre pas le bandeau');
+      return 'contenu à ' + top + ' px du haut avec le bandeau réduit (' + topOpen + ' px ouvert), 4 étapes + ⚙, témoin ● et menu Projet OK, bandeau réduit après copie';
+    }],
+    ['25 Version de référence (ChatGPT 8.9)', async () => {
+      const E = window.JACK22_C89;
+      if (!E || E.version !== '8.9-reference') throw new Skip('pas la présentation de référence 8.9');
+      show('studio'); await sleep(30);
+      const notes = [];
+      // Présentation classique : 7 onglets visibles, messages sur leur propre ligne, Studio à l'accueil.
+      const tabs = [...$('dockNav').querySelectorAll('[data-dock-pane]')].filter(b => b.offsetParent).map(b => b.dataset.dockPane);
+      if (tabs.length !== 7) throw Error('onglets visibles : ' + tabs.join());
+      if ($('dockMessages').parentElement !== $('dockNav').parentElement || $('dockNav').contains($('dockMessages'))) throw Error('messages non séparés');
+      if (/M6|^15$/.test([...document.querySelectorAll('.orbitMixerName>b,.orbitSynthName>b')].map(b => b.textContent).join())) throw Error('badges M6 / 15 encore présents');
+      // Témoin ● sur Sauvegarder.
+      const bpm = $('bpm'); bpm.value = Number(bpm.value) + 1; bpm.dispatchEvent(new Event('change', { bubbles: true })); E.syncDirty();
+      if (!$('save').classList.contains('claude89Dirty')) throw Error('témoin ● absent après modification');
+      await ProjectPersistence.save(); await until(() => !persistBusy, 20000); E.syncDirty();
+      if ($('save').classList.contains('claude89Dirty')) throw Error('témoin ● reste après Sauvegarder');
+      // Bandeau : visible à l'ouverture ; on le masque (bouton du bandeau ou menu Projet) et le menu Projet le réaffiche.
+      if (getComputedStyle($('storeWarn')).display === 'none') throw Error('bandeau absent à l’ouverture');
+      const menu = document.querySelector('.dockProject .dockPopupBody'), item = t => [...menu.querySelectorAll('button')].find(b => b.textContent.includes(t) && !b.hidden);
+      const reduce = $('storeWarn').querySelector('.claude89Reduce');
+      (reduce && reduce.offsetParent ? reduce : item('Masquer l’avertissement')).click();
+      if (getComputedStyle($('storeWarn')).display !== 'none') throw Error('masquer le bandeau sans effet');
+      item('Afficher l’avertissement').click();
+      if (getComputedStyle($('storeWarn')).display === 'none') throw Error('le menu Projet ne réaffiche pas le bandeau');
+      // Accueil : présentation 8.6 (mode compact coupé sur le Studio complet, rétabli ailleurs).
+      if (window.JACK22_ACCUEIL) {
+        if (!document.body.classList.contains('c89Accueil') || document.body.classList.contains('compact88')) throw Error('accueil hors présentation 8.6');
+        show('dockComposer'); await sleep(20); if (!document.body.classList.contains('compact88')) throw Error('mode compact absent hors accueil'); show('studio'); await sleep(20);
+        if (!document.body.classList.contains('c89Accueil')) throw Error('retour à l’accueil sans présentation 8.6');
+      }
+      // Vues détaillées du Studio : cachées par défaut, affichées depuis le menu Projet.
+      if ($('workspace88').offsetParent) throw Error('vues détaillées visibles par défaut');
+      item('vues détaillées').click();
+      if (!$('workspace88').offsetParent) throw Error('vues détaillées non affichées');
+      item('vues détaillées').click();
+      // Liens Voix ⇄ Paroles.
+      show('dockVoices'); [...$('dockVoices').querySelectorAll('.claude89Link')][0]?.click(); await sleep(20);
+      if ($('dockWords').hidden) throw Error('lien vers Paroles');
+      [...$('dockWords').querySelectorAll('.claude89Link')][0]?.click(); await sleep(20);
+      if ($('dockVoices').hidden) throw Error('lien vers Voix');
+      show('studio'); await sleep(30);
+      // Piano entier : chaque touche visible en entier et cliquable après défilement.
+      const keys = [...$('piano').querySelectorAll('.key')]; let bad = 0;
+      for (const k of keys) {
+        k.scrollIntoView({ block: 'center' }); const r = k.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.bottom - 6);
+        if (!(hit === k || k.contains(hit))) bad++;
+      }
+      if (keys.length !== 24 || bad) throw Error(keys.length + ' touches, ' + bad + ' recouvertes ou coupées');
+      const ph = Math.round($('piano').getBoundingClientRect().height);
+      // Mixeur entier : les 6 faders gardent leur hauteur utile.
+      const faders = [...document.querySelectorAll('#dockInstrumentBank .fader')].map(f => Math.round(f.getBoundingClientRect().height));
+      if (faders.some(h => h < 60)) notes.push('faders courts : ' + faders.join('/') + ' px');
+      window.scrollTo(0, 0);
+      return '7 onglets, messages séparés, ● OK, bandeau réductible/réaffichable, vues détaillées et liens Voix ⇄ Paroles OK, piano 24 touches entières (' + ph + ' px), faders ' + faders.join('/') + ' px' + (notes.length ? ' — À NOTER : ' + notes.join(' ; ') : '');
+    }],
     ['21 Aucune erreur JavaScript', async () => {
       const real = errors.filter(e => !/^alert:/.test(e));
       if (real.length) throw Error(real.slice(0, 3).join(' | '));
