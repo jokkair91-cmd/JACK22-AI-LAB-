@@ -1,3 +1,5 @@
+JACK22 9.0 — CANDIDATE
 Extraire le ZIP puis ouvrir ouvrir-dans-Edge.cmd.
-Accueil Studio complet : si besoin, descendre un peu pour voir le mixeur et le piano en entier.
-Les autres espaces sont inchangés. Lire CORRECTION-PIANO.md.
+Utiliser une copie de projet. La 8.9 validée reste la référence stable.
+Inspecter/zoom/annuler dans l’arrangement ; bibliothèque et versions dans Projet.
+Lire BILAN-9.0.md avant utilisation.

@@ -1,9 +1,12 @@
 {
-    "JACK22-STUDIO-LOT8.9.html":  "46127d9ca660032fe6389a77db547575c367c6241b0bdadcce88b833bae12781",
-    "tests/lot8-tests.js":  "4644e47b26d64cbfa8537570841bb5b5a3c2f1e30e86cc915d221e7d65f9128e",
-    "web/icon-192.png":  "dc8e897258181376ae938eb14e4a73070d0bc487d7fcce2b6270ba03c8a205f7",
-    "web/icon-512.png":  "f7045d533b0cb05c5615ca05a6ba7faa91787bb0020fd93913f4e4986ded8482",
-    "web/index.html":  "5f59c61a378f0a8de7e0794864d0e9e36004e7a7a4760b4ccb0e4312b0050889",
-    "web/manifest.webmanifest":  "0f2a90661fef82e0b929a4d7bdc4d30925d0c9f99d402b4e646963f2a787e87a",
-    "web/sw.js":  "de9c4afa84ec25107da36f47a1938a69dcfb8243edc466d9170546ae3ad98230"
+  "tests/lot8-tests.js": "4644e47b26d64cbfa8537570841bb5b5a3c2f1e30e86cc915d221e7d65f9128e",
+  "web/icon-192.png": "dc8e897258181376ae938eb14e4a73070d0bc487d7fcce2b6270ba03c8a205f7",
+  "web/icon-512.png": "f7045d533b0cb05c5615ca05a6ba7faa91787bb0020fd93913f4e4986ded8482",
+  "web/index.html": "230cdfb6ccfe811920bbc4b29ca164bf2ad1426b1eab717d238689eafe2bd528",
+  "web/manifest.webmanifest": "0f2a90661fef82e0b929a4d7bdc4d30925d0c9f99d402b4e646963f2a787e87a",
+  "web/sw.js": "66e1ee3adf91c7e8408e1b26b419a440d29fd8491245bad8028719b2fe29bfd3",
+  "JACK22-STUDIO-9.0-CANDIDATE.html": "d4409c34d0ec840c01f9c8fb7b7f3b58aa6dcfbc043fcfdc3fc1e8ab3e40787a",
+  "sources/extension.js": "fe6194961dd726bd62d71ece289f79573d4e5e0506d465b3485ac2ed9d246f3f",
+  "tests/workflow-tests.js": "990a099edb7a85f66194398a342e279ec28bcbe670156e1e94b8776d94ecd2d3",
+  "tests/inherited-tests.js": "4644e47b26d64cbfa8537570841bb5b5a3c2f1e30e86cc915d221e7d65f9128e"
 }

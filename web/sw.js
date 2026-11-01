@@ -1,6 +1,6 @@
 'use strict';
 const PREFIX = 'jack22-vision8-' + encodeURIComponent(self.registration.scope) + '-';
-const CACHE = PREFIX + '5f59c61a378f0a8d';
+const CACHE = PREFIX + '230cdfb6ccfe8119';
 const FILES = ['index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 const urlFor = file => new URL(file, self.registration.scope).href;
 self.addEventListener('install', event => {

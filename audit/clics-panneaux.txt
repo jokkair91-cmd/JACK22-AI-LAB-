@@ -1,0 +1,3 @@
+fold visible content false
+focused hides patterns true
+restores patterns true
