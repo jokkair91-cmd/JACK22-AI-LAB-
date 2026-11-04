@@ -1,12 +1,14 @@
 {
-    "JACK22-STUDIO-9.3-CANDIDATE.html":  "6c2e9e0ff2f5548ed2dbf73f4cf751eb240fdd8846091826ecc622f47392506d",
-    "tests/lot8-tests.js":  "26b6cd23ccf2c8c7e710c22036af04d99b3cba09c259136f3c6916baabf595d4",
-    "tests/inherited-tests.js":  "26b6cd23ccf2c8c7e710c22036af04d99b3cba09c259136f3c6916baabf595d4",
-    "tests/workflow-tests.js":  "990a099edb7a85f66194398a342e279ec28bcbe670156e1e94b8776d94ecd2d3",
-    "sources/extension.js":  "fe6194961dd726bd62d71ece289f79573d4e5e0506d465b3485ac2ed9d246f3f",
-    "web/icon-192.png":  "dc8e897258181376ae938eb14e4a73070d0bc487d7fcce2b6270ba03c8a205f7",
-    "web/icon-512.png":  "f7045d533b0cb05c5615ca05a6ba7faa91787bb0020fd93913f4e4986ded8482",
-    "web/index.html":  "2f0cd153b1da71726bc52387b0718e491e0db7c7535267eb7fe3e6bb9acc3d16",
-    "web/manifest.webmanifest":  "0f2a90661fef82e0b929a4d7bdc4d30925d0c9f99d402b4e646963f2a787e87a",
-    "web/sw.js":  "5525fc06563d1ad6206e65d5c81a47cfbd1f025ad97e2bb465029287cba325dc"
+    "JACK22-STUDIO-11.5-CLAUDE-MAQUETTES.html":  "1187060f32cb599400715181e0c77b83fcf42e025ceb490b84235940dcf013e1",
+    "tests/lot8-tests.js":  "dbd398f812252c97e22b8cc2966f33ed7ee7a1201c9de50532ec900cdda57245",
+    "sources/claude93-packs.html":  "b0ea72bd31b2544faa7354491391bd222a028b55fdd37878c2c2f540aee48aae",
+    "sources/claude115-afro.html":  "57bee968d83bb4aa937c0bd34751752610762a52f3c5ba1f046f3061aad522b0",
+    "sources/claude116-piano.html":  "4422820995b566103e0cecac44ad12f76d27e11df6476ab212dc3837792094b5",
+    "sources/claude117-voix.html":  "a76f59fef3443cc1af7326b81d397f98434a2053758c55844a7a501eb13952fd",
+    "sources/claude118-ecran.html":  "c029d5516c69c0775b4587856f3d5e7309d461ee2e215af162245d017f84251f",
+    "sources/claude119-maquette.html":  "346fa6379f57c8f47bce2cd0c3353002a9655864e224279596349ca4a8a542b6",
+    "sources/claude120-voix-maquette.html":  "f39c86f0cc6e7f060d85d121b555348c9bdd25691a1ae9676d9f3196989d7ae9",
+    "sources/claude121-parcours.html":  "8353b0996135a0d185509a998f6aa5c8555a51165cba6bc82824131be6e30046",
+    "sources/claude122-adresse.html":  "75c8eb5383c4d1a36cea8cea77d4c7180a5403ff9ad6020c8709df0de5cb0fe4",
+    "sources/claude123-habillage.html":  "4988137fb1609912694d17573d5dc1467c5b2e522547495d655a54aa340b82ab"
 }

@@ -1,5 +1,4 @@
-JACK22 9.3 - CANDIDATE (packs Shire, Warlick, Hardy Bay)
-Extraire le ZIP puis ouvrir ouvrir-dans-Edge.cmd.
-Utiliser une copie de projet. La 9.2 reste conservee, la 8.9 validee reste la version de secours.
-Accueil identique a la 8.9. Packs : Outils > Packs, ou fenetre Packs du mode Pro. De-esser : Voix > Effets voix > De-esser.
-Lire JACK22-9.3-RENDU-CLAUDE.md.
+JACK22 11.5 + Claude - CANDIDATE (packs, guitare, mode afro, Piano Roll et Prises voix des maquettes)
+Base : la 11.5 de ChatGPT. Ouvrir ouvrir-dans-Edge.cmd. Utiliser une copie de projet.
+Packs et mode afro : Outils > Packs & mode afro. Son Guitare : choix des sons du synthe.
+Lire JACK22-11.5-BILAN-LOT-CLAUDE.md (dernier lot) et JACK22-11.5-MAQUETTES-RENDU.md.

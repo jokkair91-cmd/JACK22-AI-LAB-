@@ -42,6 +42,13 @@
     for (let i = data.at; i + 1 < data.at + data.size; i += 2) { const s = v.getInt16(i, true) / 32768; if (!Number.isFinite(s)) finite = false; peak = Math.max(peak, Math.abs(s)); sum += s * s; n++; }
     return { ch, rate, bits, seconds: n / ch / rate, peak, rms: Math.sqrt(sum / Math.max(1, n)), finite, bytes: blob.size };
   }
+  // 11.5 : présentation par espaces (Composition, Voix & texte, Console…) au lieu des onglets.
+  const spaces = () => document.body.classList.contains('j93Workspace');
+  // Les vues (Arrangement, Batterie, Piano Roll…) n'apparaissent qu'une fois leur espace choisi.
+  const GROUP = { 'Arrangement': 'Composition', 'Batterie': 'Composition', 'Piano Roll': 'Composition' };
+  const navBtn = name => [...document.querySelectorAll('#j93Nav button')].find(x => x.textContent.trim() === name && x.offsetWidth);
+  const room = name => { if (!navBtn(name) && GROUP[name]) navBtn(GROUP[name])?.click(); const b = navBtn(name); if (!b) throw Error('espace « ' + name + ' » introuvable'); b.click(); };
+  const noTabs = () => { if (spaces()) throw new Skip('présentation par espaces (11.5) : vérifiée par le test 31'); };
   const tab = name => [...document.querySelectorAll('[data-dock-pane]')].find(b => b.dataset.dockPane === name);
   const show = name => { tab(name).click(); };
   const stopAll = () => { $('stop').click(); };
@@ -63,6 +70,7 @@
       return 'build ' + build + ', piano ' + keys + ' éléments, timeline ' + document.querySelectorAll('#tlRows .tl-row').length + ' lignes';
     }],
     ['02 Navigation des onglets', async () => {
+      noTabs();
       const names = [...document.querySelectorAll('[data-dock-pane]')].map(b => b.dataset.dockPane);
       for (const n of names) {
         show(n);
@@ -160,6 +168,7 @@
       return 'ÉQ, Réverb, Delay, Comp. affichés ; trois effets activés';
     }],
     ['10 Synthé Orbite', async () => {
+      if (spaces()) { room('Piano Roll'); await sleep(200); }
       for (const b of document.querySelectorAll('[data-dock-preset]')) { b.click(); if ($('preset').value !== b.dataset.dockPreset) throw Error('planète ' + b.textContent); }
       if (getComputedStyle($('harmCtl')).display === 'none' || !$('harmAmt').offsetParent) throw Error('harmoniques 808 invisibles');
       const o = Number($('octVal').textContent); $('octUp').click(); const up = Number($('octVal').textContent); $('octDown').click();
@@ -299,6 +308,7 @@
       return '4 vues agrandies, ' + toggles.length + ' panneaux repliables, Composer compact ' + Math.round(compact) + ' px / normal ' + Math.round(large) + ' px' + (notes.length ? ' — À NOTER : ' + notes.join(' ; ') : '');
     }],
     ['22 Espaces compacts (ChatGPT 8.8)', async () => {
+      noTabs();
       const C = window.JACK22_COMPACT;
       if (!C) throw new Skip('pas d’espaces compacts 8.8 dans cette version');
       const notes = [];
@@ -412,6 +422,7 @@
       return 'contenu à ' + top + ' px du haut avec le bandeau réduit (' + topOpen + ' px ouvert), 4 étapes + ⚙, témoin ● et menu Projet OK, bandeau réduit après copie';
     }],
     ['25 Version de référence (ChatGPT 8.9)', async () => {
+      noTabs();
       const E = window.JACK22_C89;
       if (!E || E.version !== '8.9-reference') throw new Skip('pas la présentation de référence 8.9');
       show('studio'); await sleep(30);
@@ -494,6 +505,7 @@
     }],
     ['27 Interface allégée 9.1 (Claude)', async () => {
       if (!window.JACK22_C91) throw new Skip('pas d’interface allégée 9.1 dans cette version');
+      noTabs();
       const visible = el => getComputedStyle(el).color !== 'rgba(0, 0, 0, 0)';
       // Accueil : clavier inchangé (lettres visibles).
       show('studio'); await sleep(30);
@@ -532,13 +544,16 @@
       const P = window.JACK22_PRO;
       if (!P) throw new Skip('pas de mode Pro dans cette version');
       if (innerWidth < 900) throw new Skip('mode Pro empilé sur écran étroit : contrôlé par le test 23');
-      show('studio'); await sleep(30);
+      document.querySelectorAll('dialog[open]').forEach(d => d.close());   // fenêtre laissée ouverte par un test précédent
+      // 11.5 : l'écran de départ, ce sont les espaces (un test précédent a pu passer par l'ancien écran).
+      const WS0 = !!window.JACK22_WORKSPACE;
+      if (WS0) { if (!$('dockDrawer').hidden) show('studio'); await sleep(300); window.JACK22_WORKSPACE.enter(); } else show('studio'); await sleep(400);
       // Instantané de l'accueil, comparé après la sortie du mode Pro.
       // Instantané par emplacement (l'arrangement est redessiné à la sortie : ses éléments sont recréés à l'identique).
       const snap = () => { window.scrollTo(0, 0); const main = document.querySelector('main.dockApp'), m = new Map();
         const key = e => { const p = []; for (let x = e; x && x !== main; x = x.parentElement) { if (x.id) { p.unshift('#' + x.id); break; } const sib = [...x.parentElement.children].filter(c => c.tagName === x.tagName); p.unshift(x.tagName.toLowerCase() + '[' + sib.indexOf(x) + ']' + (typeof x.className === 'string' && x.className ? '.' + x.className.split(' ')[0] : '')); } return p.join('>'); };
         // Barre du haut exclue : le témoin ● de Sauvegarder y change selon l'état du projet, sans lien avec le mode Pro.
-        for (const e of main.querySelectorAll('*')) { if (e.closest('#dockDrawer') || e.closest('#dockHeader .transport') || e.closest('details:not([open])>:not(summary)')) continue; const r = e.getBoundingClientRect(); if (!r.width && !r.height) continue; const s = getComputedStyle(e); m.set(key(e), [r.left, r.top, r.width, r.height].map(Math.round).join() + '|' + s.color + '|' + s.opacity); } return m; };
+        for (const e of main.querySelectorAll('*')) { if (e.closest('#dockDrawer') || e.closest('#dockHeader .transport') || e.closest('#j93Library') || e.closest('details:not([open])>:not(summary)')) continue; const r = e.getBoundingClientRect(); if (!r.width && !r.height) continue; const s = getComputedStyle(e); m.set(key(e), [r.left, r.top, r.width, r.height].map(Math.round).join() + '|' + s.color + '|' + s.opacity); } return m; };
       const before = snap(), parents = new Map(P.WINS.map(id => [id, $(id)?.parentElement])), selParent = document.querySelector('.dockSelection').parentElement;
       // Entrée par le menu Projet.
       document.querySelector('.dockProject').open = true; $('c92Enter').click(); await sleep(150);
@@ -579,10 +594,12 @@
       if (!low || !pbEl.contains(low)) throw Error('bas du menu Réglages recouvert par ' + (low ? (low.closest('section')?.id || low.tagName) : 'rien'));
       // Sortie (sans avoir touché au morceau) : chaque panneau à sa place, accueil identique.
       $('c92Bar').querySelector('.c92Exit').click(); await sleep(700); // les icônes des pistes Orbite sont redessinées en différé
-      if (P.on || document.body.classList.contains('c92Pro')) throw Error('sortie du mode Pro');
+      // 11.5 : les espaces reposent sur le mode Pro ; quitter les fenêtres libres ramène aux espaces.
+      if (WS0) { if (!window.JACK22_WORKSPACE.on || $('c92Bar').offsetWidth || [...$('dockStage').querySelectorAll('.c92Grip,.c92WinBar')].some(g => g.offsetWidth)) throw Error('retour aux espaces après les fenêtres libres'); }
+      else if (P.on || document.body.classList.contains('c92Pro')) throw Error('sortie du mode Pro');
       for (const [id, parent] of parents) if ($(id) && $(id).parentElement !== parent) throw Error(id + ' pas revenu à sa place');
-      if (document.querySelector('.dockSelection').parentElement !== selParent || $('c92Inspector') || $('dockStage').querySelector('.c92Grip,.c92WinBar')) throw Error('restes du mode Pro');
-      const after = snap(); let diff = 0, only = 0, kinds = []; for (const [k, v] of before) { const w = after.get(k); if (w === undefined) { only++; if (kinds.length < 3) kinds.push('−' + k.split('>').slice(-2).join('>')); continue; } if (w !== v) { diff++; if (kinds.length < 3) kinds.push(k.split('>').pop()); } } for (const k of after.keys()) if (!before.has(k)) { only++; if (kinds.length < 3) kinds.push('+' + k.split('>').slice(-2).join('>')); }
+      if (!WS0 && (document.querySelector('.dockSelection').parentElement !== selParent || $('c92Inspector') || $('dockStage').querySelector('.c92Grip,.c92WinBar'))) throw Error('restes du mode Pro');
+      const after = snap(); let diff = 0, only = 0, kinds = []; for (const [k, v] of before) { const w = after.get(k); if (w === undefined) { only++; if (kinds.length < 3) kinds.push('−' + k.split('>').slice(-2).join('>')); continue; } if (w !== v) { diff++; if (kinds.length < 3) kinds.push(k.split('>').slice(-3).join('>') + ' [' + v + ' → ' + w + ']'); } } for (const k of after.keys()) if (!before.has(k)) { only++; if (kinds.length < 3) kinds.push('+' + k.split('>').slice(-2).join('>')); }
       if (diff || only) throw Error('accueil modifié après la sortie : ' + diff + ' écarts, ' + only + ' en plus/en moins (' + kinds.join(', ') + ')');
       // Retour en mode Pro : disposition retrouvée.
       P.enter(); await sleep(150); const back = $('timeline').getBoundingClientRect();
@@ -609,7 +626,7 @@
       $('c92Bar').querySelector('[data-win="dockBeat"]').click(); await sleep(30);
       const step = document.querySelector('[aria-label="CLAP pas 3"]'), on0 = step.classList.contains('active'); step.click();
       if (step.classList.contains('active') === on0) throw Error('pas de batterie en mode Pro');
-      P.exit(); await sleep(100);
+      if (WS0) { $('c92Bar').querySelector('.c92Exit').click(); await sleep(300); } else { P.exit(); await sleep(100); }
       for (const [id, parent] of parents) if ($(id) && $(id).parentElement !== parent) throw Error(id + ' pas revenu à sa place après usage');
       return '5 fenêtres sans chevauchement, déplacement/poignée/clavier OK, disposition mémorisée, menu Réglages entier, lecture/Mute/inspecteur/Piano Roll/batterie OK, accueil identique après sortie (' + before.size + ' éléments)';
     }],
@@ -670,8 +687,109 @@
       document.querySelector('[data-c93-hardy="equilibre"]').click(); show('studio');
       return 'limiteur éteint = export identique, allumé = crête ' + wl.peak.toFixed(3) + ' ; sauvegarde/chargement OK ; de-esser −' + Math.round(100 - 100 * r1 / r0) + ' % sur bruit blanc ; Shire, Warlick, Hardy Bay appliqués';
     }],
+    ['30 Mode afro, guitare, Hardy Bay par instrument', async () => {
+      const AF = window.JACK22_AFRO;
+      if (!AF) throw new Skip('pas de mode afro dans cette version');
+      stopAll(); await sleep(300); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      if (!PRESETS.guitar || ![...$('preset').options].some(o => o.value === 'guitar')) throw Error('son Guitare absent du synthé');
+      const n0 = song.tracks.map(t => t.patterns.length);
+      AF.applyAfro('afrobeats', { bass: true, guitar: true, tempo: true }); await sleep(100);
+      const act = i => song.tracks[i].patterns[song.tracks[i].active];
+      if (song.tracks.some((t, i) => t.patterns.length !== n0[i] + 1)) throw Error('patterns non ajoutés');
+      if (act(0).grid[0].join() !== AF.AFRO.afrobeats.drums[0].join()) throw Error('batterie afrobeats non choisie');
+      if (!act(1).notes.length || act(1).notes.some(n => n.preset !== 'sub808')) throw Error('basse 808 absente');
+      if (!act(2).notes.length || act(2).notes.some(n => n.preset !== 'guitar')) throw Error('riff guitare absent');
+      if ($('bpm').value !== '104') throw Error('tempo : ' + $('bpm').value);
+      // Annuler (historique du morceau) retire tout l'ajout en une fois ; Rétablir le remet.
+      $('v8Undo').click(); await sleep(300);
+      if (song.tracks.some((t, i) => t.patterns.length !== n0[i]) || $('bpm').value === '104') throw Error('Annuler ne retire pas l’ajout afro');
+      // Annuler peut relancer le calcul d'une voix : Rétablir attend la fin de ce calcul, comme pour l'utilisateur.
+      await sleep(300); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      $('v8Redo').click(); await sleep(300); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      if (song.tracks.some((t, i) => t.patterns.length !== n0[i] + 1) || act(2).notes[0]?.preset !== 'guitar') throw Error('Rétablir ne remet pas l’ajout afro');
+      // La guitare s'entend : export en mode PATTERN, mélodie coupée puis rétablie.
+      $('modePattern')?.click(); await sleep(50);
+      const on = await readWav((await exportOnce()).blob); song.tracks[2].mute = true;
+      const off = await readWav((await exportOnce()).blob); song.tracks[2].mute = false; show('studio');
+      if (!on.finite || on.peak <= 0) throw Error('export afro silencieux');
+      if (Math.abs(on.rms - off.rms) < 1e-4) throw Error('guitare inaudible dans l’export');
+      // Hardy Bay : égaliseurs dans les racks, effets personnels conservés.
+      const R = window.JACK22_RACKS; let rack = 'sans racks';
+      if (R && R.apply) {
+        R.apply(s => { (s.chains.drums = s.chains.drums || []).push({ id: 'mine', type: 'gain', on: true, params: { db: 0 } }); });
+        document.querySelector('[data-c93-hardy="afro"]').click(); await sleep(100);
+        let d = R.settings.chains.drums.map(e => e.id).join();
+        if (d !== 'mine,hbeq,hbcomp') throw Error('racks batterie après Percussions afro : ' + d);
+        document.querySelector('[data-c93-hardy="equilibre"]').click(); await sleep(100);
+        d = R.settings.chains.drums.map(e => e.id).join();
+        if (d !== 'mine,hbeq' || R.settings.chains.bass.find(e => e.id === 'hbeq').params.high !== -3) throw Error('racks après Équilibré : ' + d);
+        if ($('mixHat').value !== '65') throw Error('volumes Hardy Bay');
+        R.apply(s => { for (const k of Object.keys(s.chains)) delete s.chains[k]; });
+        rack = 'égaliseurs posés dans les racks, effet personnel conservé';
+      }
+      if (!document.querySelector('[data-c93-warlick="afro"]')) throw Error('Warlick Master afro absent');
+      return 'Afrobeats : batterie, basse 808, guitare, 104 BPM ; guitare audible (RMS ' + off.rms.toFixed(4) + ' → ' + on.rms.toFixed(4) + ') ; Annuler/Rétablir OK ; Hardy Bay : ' + rack;
+    }],
+    ['31 Espaces 11.5 (navigation, retours, fenêtres libres)', async () => {
+      const WS = window.JACK22_WORKSPACE;
+      if (!WS) throw new Skip('pas d’espaces dans cette version');
+      if (innerWidth < 900) throw new Skip('espaces empilés sur écran étroit : contrôlés par le test 23');
+      stopAll(); if (!WS.on) WS.enter(); await sleep(200);
+      const real = el => { el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true })); el.click(); };
+      const shown = () => [...$('dockStage').children].filter(p => p.classList.contains('panel') && p.offsetWidth > 40 && p.offsetHeight > 40).map(p => p.id);
+      const want = { 'Arrangement': ['timeline'], 'Batterie': ['dockBeat'], 'Piano Roll': ['roll', 'synth'], 'Console': ['mixer', 'fx'], 'Voix & texte': ['cVoices'] };
+      for (const [name, ids] of Object.entries(want)) {
+        room(name); await sleep(250); const s = shown();
+        for (const id of ids) if (!s.includes(id)) throw Error('espace ' + name + ' : ' + id + ' absent (' + s.join() + ')');
+        if (document.documentElement.scrollWidth > innerWidth + 1) throw Error('débordement dans ' + name);
+      }
+      // Outils du menu : « Retour au studio » ramène aux espaces.
+      const tools = () => [...document.querySelectorAll('#j93Nav details')].find(d => /^Outils/.test(d.querySelector('summary').textContent.trim()));
+      for (const label of ['Sons & sampler', 'Packs & mode afro']) {
+        real(tools().querySelector('summary')); await sleep(150);
+        const item = [...tools().querySelectorAll('button')].find(b => b.textContent.trim() === label);
+        if (!item) { if (label === 'Packs & mode afro' && !window.JACK22_AFRO) continue; throw Error('« ' + label + ' » absent du menu Outils'); }
+        real(item); await sleep(400);
+        if (label === 'Packs & mode afro' && !($('c93Packs').offsetWidth > 200)) throw Error('panneau Packs non affiché');
+        real(document.querySelector('#dockTools [data-dock-close]')); await sleep(500);
+        if (!WS.on || !spaces()) throw Error('retour au studio après « ' + label + ' » : ancien écran au lieu des espaces');
+      }
+      // Fenêtres libres depuis le menu Projet : synthé visible, retour aux espaces.
+      document.querySelector('.dockProject').open = true; $('c92Enter').click(); await sleep(400);
+      if (!$('c92Bar').offsetWidth) throw Error('« Mode Pro (fenêtres)… » sans effet');
+      if (!($('synth').offsetWidth > 0) && !$('synth').classList.contains('c92Closed')) throw Error('fenêtre Synthé Orbite invisible');
+      $('c92Bar').querySelector('.c92Exit').click(); await sleep(500);
+      if (!WS.on) throw Error('sortie des fenêtres libres : ancien écran au lieu des espaces');
+      return Object.keys(want).length + ' espaces avec leurs panneaux, sans débordement ; retours depuis Outils et fenêtres libres vers les espaces ; synthé visible en fenêtre';
+    }],
+    ['32 Prises : remplacer sur la piste', async () => {
+      const V = window.JACK22_VOIX_MAQUETTE;
+      if (!V || !V.useTake) throw new Skip('pas de choix de prise dans cette version');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      window.JACK22_WORKSPACE?.choose('voice', 'record'); await sleep(400);
+      [...document.querySelectorAll('#j109VoiceTabs button')][0]?.click(); await sleep(200);
+      let c1 = audioClips.find(c => c.voice && c.voice.slot === 1);
+      if (!c1) { $('l3Demo').click(); await until(() => audioClips.find(c => c.voice && c.voice.slot === 1), 20000); await until(() => !Jack22Lot3.pending, 180000, 200); c1 = audioClips.find(c => c.voice && c.voice.slot === 1); }
+      // Seconde prise gardée muette, comme après une prise en plusieurs passes (deux fois moins forte).
+      const b = c1.buffer, ch = Array.from({ length: b.numberOfChannels }, (_, i) => b.getChannelData(i).map(s => s * 0.5));
+      const c2 = await JACK22_PRODUCTION.newAudio({ sampleRate: b.sampleRate }, ch, 'VOIX 1 · passe test', c1.startBar);
+      const prod = JACK22_PRODUCTION.config; prod.clips = prod.clips || {}; prod.clips[c2.id] = { mute: true, archivedVoice: JSON.parse(JSON.stringify(c1.voice)) };
+      const v = VoiceStore.capture(); v.production97 = prod; VoiceStore.setText(v); tlBuild(); await sleep(700);
+      const rows = () => [...document.querySelectorAll('#c120Takes li')];
+      if (rows().length < 2) throw Error('les deux prises ne sont pas listées');
+      const cb = rows().map(l => l.querySelector('input')).find(i => i && !i.disabled); cb.click(); await sleep(400);
+      const btn = [...document.querySelectorAll('#c120Takes button')].find(x => x.textContent === 'Remplacer sur la piste');
+      if (btn.disabled) throw Error('« Remplacer sur la piste » grisé après avoir coché');
+      btn.click(); await sleep(300); await until(() => !Jack22Lot3.pending, 180000, 200);
+      if (c1.voice || c2.voice?.slot !== 1 || !JACK22_PRODUCTION.config.clips[c1.id]?.mute) throw Error('échange de prise incomplet');
+      if (!rows()[0].classList.contains('sel')) throw Error('la nouvelle prise n’est pas marquée SÉLECTIONNÉE');
+      $('v8Undo').click(); await sleep(300); await until(() => !Jack22Lot3.pending, 180000, 200);
+      if (!audioClips.find(c => c.id === c1.id)?.voice) throw Error('Annuler ne remet pas la première prise');
+      return 'deux prises listées, la seconde mise sur la piste (la première gardée muette), Annuler revient en arrière';
+    }],
     ['21 Aucune erreur JavaScript', async () => {
-      const real = errors.filter(e => !/^alert:/.test(e));
+      // « ResizeObserver loop… » : simple avis du navigateur (une mise en page refaite à l'image suivante), pas une erreur du studio.
+      const real = errors.filter(e => !/^alert:/.test(e) && !/^ResizeObserver loop/.test(e));
       if (real.length) throw Error(real.slice(0, 3).join(' | '));
       return 'aucune erreur pendant la suite' + (errors.length ? ' (messages : ' + errors.length + ')' : '');
     }],

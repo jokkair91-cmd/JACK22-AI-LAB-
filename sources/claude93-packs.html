@@ -71,7 +71,8 @@
  const WARLICK={
   neutre:{label:'Neutre',eq:{low:0,mid:0,high:0},comp:{on:false},limit:{on:false,ceiling:-1,drive:0}},
   mix:{label:'Mix',eq:{low:1,mid:0,high:1},comp:{on:true,thr:-18,ratio:2,attack:20,release:200,makeup:1},limit:{on:false,ceiling:-1,drive:0}},
-  master:{label:'Master',eq:{low:2,mid:-1,high:2},comp:{on:true,thr:-14,ratio:2,attack:30,release:250,makeup:2},limit:{on:true,ceiling:-1,drive:3}}
+  master:{label:'Master',eq:{low:2,mid:-1,high:2},comp:{on:true,thr:-14,ratio:2,attack:30,release:250,makeup:2},limit:{on:true,ceiling:-1,drive:3}},
+  afro:{label:'Master afro',eq:{low:2,mid:0,high:2},comp:{on:true,thr:-16,ratio:2.5,attack:25,release:180,makeup:2},limit:{on:true,ceiling:-1,drive:2}}
  };
  const SHIRE={
   rap:{label:'Rap',eq:{on:true,low:-2,mid:1,high:3},comp:{on:true,thr:-20,ratio:4,attack:5,release:120,makeup:3},deess:{on:true,amount:60,freq:6500},reverb:{on:true,mix:8,decay:0.8},delay:{on:false,time:0.25,fb:25,mix:15}},
@@ -103,7 +104,8 @@
  function applyHardy(key){
   const p=HARDY[key];if(!p)return;remember();
   for(const[id,v]of Object.entries(p.mix)){const el=$c(id);if(!el)continue;el.value=String(v);el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}
-  remember();say('Hardy Bay « '+p.label+' » appliqué au mixeur.');
+  let extra='';try{extra=window.JACK22_PACKS_HOOKS?.hardy?.(key)||'';}catch(e){extra=' '+e.message;}
+  remember();say('Hardy Bay « '+p.label+' » appliqué au mixeur.'+extra);
  }
 
  // Panneau Packs (onglet Outils ; fenêtre « Packs » du mode Pro).
