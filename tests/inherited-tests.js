@@ -543,6 +543,8 @@
       // Entrée par le menu Projet.
       document.querySelector('.dockProject').open = true; $('c92Enter').click(); await sleep(150);
       if (!P.on || !document.body.classList.contains('c92Pro')) throw Error('mode Pro non activé');
+      // Disposition d'origine (une disposition mémorisée par un essai précédent ne compte pas).
+      P.resetLayout(); await sleep(50);
       const open = P.WINS.filter(id => !$(id).classList.contains('c92Closed')), desk = $('dockStage').getBoundingClientRect();
       if (open.join() !== 'timeline,c92Inspector,fx,mixer,synth') throw Error('fenêtres ouvertes : ' + open.join());
       const rects = open.map(id => $(id).getBoundingClientRect());
@@ -576,11 +578,11 @@
       if (pb.right > innerWidth + 1 || pb.bottom > innerHeight + 1 || !(hit === $('j90Inspect') || $('j90Inspect').contains(hit))) throw Error('menu Réglages coupé ou recouvert');
       if (!low || !pbEl.contains(low)) throw Error('bas du menu Réglages recouvert par ' + (low ? (low.closest('section')?.id || low.tagName) : 'rien'));
       // Sortie (sans avoir touché au morceau) : chaque panneau à sa place, accueil identique.
-      $('c92Bar').querySelector('.c92Exit').click(); await sleep(250);
+      $('c92Bar').querySelector('.c92Exit').click(); await sleep(700); // les icônes des pistes Orbite sont redessinées en différé
       if (P.on || document.body.classList.contains('c92Pro')) throw Error('sortie du mode Pro');
       for (const [id, parent] of parents) if ($(id) && $(id).parentElement !== parent) throw Error(id + ' pas revenu à sa place');
       if (document.querySelector('.dockSelection').parentElement !== selParent || $('c92Inspector') || $('dockStage').querySelector('.c92Grip,.c92WinBar')) throw Error('restes du mode Pro');
-      const after = snap(); let diff = 0, only = 0, kinds = []; for (const [k, v] of before) { const w = after.get(k); if (w === undefined) { only++; continue; } if (w !== v) { diff++; if (kinds.length < 3) kinds.push(k.split('>').pop()); } } for (const k of after.keys()) if (!before.has(k)) only++;
+      const after = snap(); let diff = 0, only = 0, kinds = []; for (const [k, v] of before) { const w = after.get(k); if (w === undefined) { only++; if (kinds.length < 3) kinds.push('−' + k.split('>').slice(-2).join('>')); continue; } if (w !== v) { diff++; if (kinds.length < 3) kinds.push(k.split('>').pop()); } } for (const k of after.keys()) if (!before.has(k)) { only++; if (kinds.length < 3) kinds.push('+' + k.split('>').slice(-2).join('>')); }
       if (diff || only) throw Error('accueil modifié après la sortie : ' + diff + ' écarts, ' + only + ' en plus/en moins (' + kinds.join(', ') + ')');
       // Retour en mode Pro : disposition retrouvée.
       P.enter(); await sleep(150); const back = $('timeline').getBoundingClientRect();
@@ -610,6 +612,63 @@
       P.exit(); await sleep(100);
       for (const [id, parent] of parents) if ($(id) && $(id).parentElement !== parent) throw Error(id + ' pas revenu à sa place après usage');
       return '5 fenêtres sans chevauchement, déplacement/poignée/clavier OK, disposition mémorisée, menu Réglages entier, lecture/Mute/inspecteur/Piano Roll/batterie OK, accueil identique après sortie (' + before.size + ' éléments)';
+    }],
+    ['29 Packs (limiteur, de-esser, Shire, Warlick, Hardy Bay)', async () => {
+      const K = window.JACK22_PACKS, D = window.Jack22Lot3DSP;
+      if (!K) throw new Skip('pas de packs dans cette version');
+      stopAll(); K.setLimit({ on: false, ceiling: -1, drive: 0 }); await sleep(300); await until(() => !Jack22Lot3.pending, 60000, 200);
+      // Limiteur éteint : export identique à l'octet ; allumé : plafond respecté.
+      // Le navigateur arrondit parfois un échantillon isolé d'1/32768 d'un export à l'autre (déjà vu sur la 9.2) : comparaison à 1 pas près.
+      const pcm = async blob => new Int16Array((await blob.arrayBuffer()).slice(44));
+      const gap = (x, y) => { if (x.length !== y.length) return Infinity; let m = 0, n = 0; for (let i = 0; i < x.length; i++) { const d = Math.abs(x[i] - y[i]); if (d) { n++; m = Math.max(m, d); } } return m > 1 ? Infinity : m; };
+      const a = await pcm((await exportOnce()).blob);
+      K.setLimit({ on: true, ceiling: -12, drive: 12 }); const dl = await exportOnce(), wl = await readWav(dl.blob), l = await pcm(dl.blob);
+      K.setLimit({ on: false, ceiling: -1, drive: 0 }); const c = await pcm((await exportOnce()).blob); show('studio');
+      if (gap(a, c) === Infinity) throw Error('limiteur éteint : export différent');
+      if (gap(a, l) !== Infinity) throw Error('limiteur allumé sans effet');
+      if (!wl.finite || wl.peak > 0.36 || wl.peak < 0.1) throw Error('crête avec limiteur à −12 dB : ' + wl.peak.toFixed(3));
+      // Sauvegarde : bloc limit écrit, relu, absent = éteint ; sauvegarde du projet.
+      K.setLimit({ on: true, ceiling: -3, drive: 2 });
+      const f = currentFxSave(); if (!f.limit || f.limit.ceiling !== -3) throw Error('limiteur absent de la sauvegarde');
+      if (parseFxSave(Object.assign({}, f, { limit: { on: true, ceiling: 5, drive: 0 } })) !== null) throw Error('plafond invalide accepté');
+      await ProjectPersistence.save(); await until(() => !persistBusy, 20000);
+      K.setLimit({ on: false, ceiling: -1, drive: 0 });
+      confirmAnswer = true; await ProjectPersistence.load(); await until(() => !persistBusy, 20000);
+      if (!K.limit.on || K.limit.ceiling !== -3 || K.limit.drive !== 2) throw Error('limiteur non retrouvé au chargement : ' + JSON.stringify(K.limit));
+      if (!$('c93LimOn').checked || $('c93LimCeil').value !== '-3') throw Error('panneau du limiteur pas à jour');
+      const nf = Object.assign({}, f); delete nf.limit; applyFxSave(nf); if (K.limit.on) throw Error('ancien projet sans limiteur : limiteur resté allumé');
+      // De-esser : chaîne voix sur bruit blanc, les aigus baissent ; réglage absent = chaîne d'avant.
+      const render = async deess => { const ctx = new OfflineAudioContext(1, 44100, 44100), b = ctx.createBuffer(1, 44100, 44100), x = b.getChannelData(0); let s = 7; for (let i = 0; i < x.length; i++) { s = (s * 16807) % 2147483647; x[i] = (s / 2147483647 - 0.5); }
+        const src = ctx.createBufferSource(); src.buffer = b; const cfg = D.validate(D.defaults()); if (deess) cfg.deess = deess; buildFxChain(ctx, src, ctx.destination, cfg); src.start(); const y = (await ctx.startRendering()).getChannelData(0); let e = 0; for (let i = 4410; i < y.length; i++) e += y[i] * y[i]; return Math.sqrt(e / (y.length - 4410)); };
+      const r0 = await render(null), r1 = await render({ on: true, amount: 100, freq: 5000 }), r2 = await render({ on: false, amount: 100, freq: 5000 });
+      if (!(r1 < r0 * 0.8)) throw Error('de-esser sans effet sur les aigus (' + r0.toFixed(3) + ' → ' + r1.toFixed(3) + ')');
+      if (r2 !== r0) throw Error('de-esser éteint : rendu différent');
+      if ('deess' in D.validate(D.defaults())) throw Error('de-esser présent par défaut');
+      // Shire sur la voix (démo si besoin), onglet De-esser des effets voix.
+      show('dockVoices');
+      if (!audioClips.some(c => c.buffer && c.voice)) { $('l3Demo').click(); await until(() => audioClips.some(c => c.buffer && c.voice), 20000); }
+      await until(() => !Jack22Lot3.pending, 60000, 200);
+      const tabBtn = [...document.querySelectorAll('#l3Editor [data-c88-fx]')].find(b => b.textContent === 'De-esser');
+      if (!tabBtn) throw Error('onglet De-esser absent'); tabBtn.click(); await sleep(30);
+      if ($('c93Deess').hidden) throw Error('carte De-esser cachée après clic');
+      show('dockTools'); const rap = document.querySelector('[data-c93-shire="rap"]'); await until(() => !rap.disabled, 3000);
+      // Après un chargement, la voix est recalculée en différé : Shire attend (message), comme pour l'utilisateur on réessaie.
+      const vclip = () => audioClips.find(c => c.voice && c.voice.slot === Number($('l3Slot').value));
+      await until(async () => { if (!Jack22Lot3.pending) rap.click(); await sleep(400); return Jack22Lot3.settings(vclip())?.deess; }, 60000, 100).catch(() => {});
+      await until(() => !Jack22Lot3.pending, 60000, 200);
+      const clip = audioClips.find(c => c.voice && c.voice.slot === Number($('l3Slot').value)), st = Jack22Lot3.settings(clip);
+      if (!st.deess || st.deess.amount !== 60 || st.comp.thr !== -20 || !st.eq.on) throw Error('Shire Rap non appliqué : ' + $('c93Status').textContent + ' (piste ' + $('l3Slot').value + ', clips ' + audioClips.map(c => c.voice && c.voice.slot).join() + ')');
+      if (!Jack22Lot3.prepared(clip)) throw Error('voix non recalculée après Shire');
+      show('dockVoices'); tabBtn.click(); await sleep(700);
+      if (!document.querySelector('[data-c93-deess="on"]').checked || document.querySelector('[data-c93-deess="amount"]').value !== '60') throw Error('carte De-esser pas à jour');
+      // Warlick et Hardy Bay.
+      show('dockTools'); document.querySelector('[data-c93-warlick="master"]').click();
+      if (!K.limit.on || Number($('fxLow')?.value ?? 2) !== 2) throw Error('Warlick Master non appliqué');
+      document.querySelector('[data-c93-warlick="neutre"]').click(); if (K.limit.on) throw Error('Warlick Neutre : limiteur resté allumé');
+      document.querySelector('[data-c93-hardy="afro"]').click();
+      if ($('mixHat').value !== '85' || $('mixKick').value !== '90') throw Error('Hardy Bay non appliqué');
+      document.querySelector('[data-c93-hardy="equilibre"]').click(); show('studio');
+      return 'limiteur éteint = export identique, allumé = crête ' + wl.peak.toFixed(3) + ' ; sauvegarde/chargement OK ; de-esser −' + Math.round(100 - 100 * r1 / r0) + ' % sur bruit blanc ; Shire, Warlick, Hardy Bay appliqués';
     }],
     ['21 Aucune erreur JavaScript', async () => {
       const real = errors.filter(e => !/^alert:/.test(e));

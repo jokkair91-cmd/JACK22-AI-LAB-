@@ -1,5 +1,5 @@
-JACK22 9.2 - CANDIDATE (mode Pro)
+JACK22 9.3 - CANDIDATE (packs Shire, Warlick, Hardy Bay)
 Extraire le ZIP puis ouvrir ouvrir-dans-Edge.cmd.
-Utiliser une copie de projet. La 9.0 corrigee reste conservee, la 8.9 validee reste la version de secours.
-Accueil identique a la 8.9. Mode Pro : menu Projet > Mode Pro (fenetres).
-Lire JACK22-9.2-RENDU-CLAUDE.md et voir le dossier captures.
+Utiliser une copie de projet. La 9.2 reste conservee, la 8.9 validee reste la version de secours.
+Accueil identique a la 8.9. Packs : Outils > Packs, ou fenetre Packs du mode Pro. De-esser : Voix > Effets voix > De-esser.
+Lire JACK22-9.3-RENDU-CLAUDE.md.

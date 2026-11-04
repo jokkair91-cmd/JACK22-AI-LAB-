@@ -1,12 +1,12 @@
 {
-    "JACK22-STUDIO-9.2-CANDIDATE.html":  "8972bbc40ebdc6fbfb9003beac4e308a69105e038632ecdfa52d133e2baad8cc",
-    "tests/lot8-tests.js":  "493863ad57c2f5303b090ab6088e35426e11de4060dda032b813bed30299bd02",
-    "tests/inherited-tests.js":  "493863ad57c2f5303b090ab6088e35426e11de4060dda032b813bed30299bd02",
+    "JACK22-STUDIO-9.3-CANDIDATE.html":  "6c2e9e0ff2f5548ed2dbf73f4cf751eb240fdd8846091826ecc622f47392506d",
+    "tests/lot8-tests.js":  "26b6cd23ccf2c8c7e710c22036af04d99b3cba09c259136f3c6916baabf595d4",
+    "tests/inherited-tests.js":  "26b6cd23ccf2c8c7e710c22036af04d99b3cba09c259136f3c6916baabf595d4",
     "tests/workflow-tests.js":  "990a099edb7a85f66194398a342e279ec28bcbe670156e1e94b8776d94ecd2d3",
     "sources/extension.js":  "fe6194961dd726bd62d71ece289f79573d4e5e0506d465b3485ac2ed9d246f3f",
     "web/icon-192.png":  "dc8e897258181376ae938eb14e4a73070d0bc487d7fcce2b6270ba03c8a205f7",
     "web/icon-512.png":  "f7045d533b0cb05c5615ca05a6ba7faa91787bb0020fd93913f4e4986ded8482",
-    "web/index.html":  "a5a9d673233c7702edbfbf6889d8c46f19095c359dbd1fda2a554750503ff6ce",
+    "web/index.html":  "2f0cd153b1da71726bc52387b0718e491e0db7c7535267eb7fe3e6bb9acc3d16",
     "web/manifest.webmanifest":  "0f2a90661fef82e0b929a4d7bdc4d30925d0c9f99d402b4e646963f2a787e87a",
-    "web/sw.js":  "3e08a2ec90c3200fba0892a8d2414de5d039c6e3e07af5e51c5252ea174792f4"
+    "web/sw.js":  "5525fc06563d1ad6206e65d5c81a47cfbd1f025ad97e2bb465029287cba325dc"
 }
