@@ -1,4 +1,4 @@
-JACK22 11.5 + Claude - CANDIDATE (packs, guitare, mode afro, Piano Roll et Prises voix des maquettes)
-Base : la 11.5 de ChatGPT. Ouvrir ouvrir-dans-Edge.cmd. Utiliser une copie de projet.
-Packs et mode afro : Outils > Packs & mode afro. Son Guitare : choix des sons du synthe.
-Lire JACK22-11.5-BILAN-LOT-CLAUDE.md (dernier lot) et JACK22-11.5-MAQUETTES-RENDU.md.
+JACK22 11.5 + Claude - Mission 1 (projets fiables) - CANDIDATE
+Base : JACK22-STUDIO-11.5-CLAUDE-MAQUETTES.html (SHA-256 03d69db7...), design inchange.
+Correction : un projet portable (.jack22.zip) avec plus de 11 fichiers audio se rouvre ; l'export relit l'archive avant de la proposer.
+Ouvrir ouvrir-dans-Edge.cmd. Travailler sur une copie de projet. Lire JACK22-11.5-MISSION1-RENDU.md.

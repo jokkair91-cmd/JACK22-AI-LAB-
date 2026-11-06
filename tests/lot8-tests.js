@@ -787,6 +787,48 @@
       if (!audioClips.find(c => c.id === c1.id)?.voice) throw Error('Annuler ne remet pas la première prise');
       return 'deux prises listées, la seconde mise sur la piste (la première gardée muette), Annuler revient en arrière';
     }],
+    ['33 Coller des notes (format Signal)', async () => {
+      const K = window.JACK22_COLLER;
+      if (!K) throw new Skip('pas de « Coller des notes » dans cette version');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      K.open(); await sleep(200);
+      const dlg = $('c124Dlg'), ta = dlg.querySelector('textarea'), sel = dlg.querySelector('select'), go = [...dlg.querySelectorAll('button')].find(b => b.textContent === 'Coller dans JACK22');
+      // Texte d'IA avec bloc ```json, nom de note, force et une note trop aiguë.
+      sel.value = '2'; sel.dispatchEvent(new Event('change'));
+      ta.value = 'Voici :\n```json\n[{"midi":69,"time":0,"duration":0.5,"velocity":0.9},{"midi":"C5","time":0.5,"duration":0.5},{"midi":76,"time":1,"duration":1},{"midi":110,"time":4,"duration":1}]\n```'; ta.dispatchEvent(new Event('input'));
+      if (go.disabled) throw Error('mélodie refusée : ' + dlg.querySelector('.preview').textContent);
+      const n0 = song.tracks[2].patterns.length; go.click(); await sleep(500);
+      const tr = song.tracks[2], p = tr.patterns[tr.active];
+      if (tr.patterns.length !== n0 + 1 || p.notes.length !== 4) throw Error('pattern collé incorrect');
+      const c5 = p.notes.find(n => n.start === 2); if (!c5 || (c5.octave + 1) * 12 + c5.idx !== 72) throw Error('« C5 » mal lu');
+      if (p.notes[0].velocity !== 90 || p.bars !== 2) throw Error('force ou longueur incorrecte');
+      // Texte invalide : refusé, avec un message.
+      K.open(); await sleep(100); ta.value = '[{"midi":60}]'; ta.dispatchEvent(new Event('input'));
+      if (!go.disabled || !/incomplète/.test(dlg.querySelector('.preview').textContent)) throw Error('note incomplète acceptée');
+      // Batterie GM sur la grille.
+      sel.value = '0'; sel.dispatchEvent(new Event('change')); ta.value = '[{"midi":36,"time":0},{"midi":38,"time":1},{"midi":42,"time":0.5},{"midi":39,"time":3}]'; ta.dispatchEvent(new Event('input'));
+      go.click(); await sleep(500);
+      const g = song.tracks[0].patterns[song.tracks[0].active].grid;
+      if (!g[0][0] || !g[1][4] || !g[2][2] || !g[3][12]) throw Error('batterie mal placée');
+      dlg.close();
+      $('v8Undo').click(); await sleep(400); $('v8Undo').click(); await sleep(400);
+      if (song.tracks[2].patterns.length !== n0) throw Error('Annuler ne retire pas le pattern collé');
+      return 'mélodie (bloc ```json, « C5 », force, octave ramenée) et batterie collées, note incomplète refusée, Annuler OK';
+    }],
+    ['34 Projet portable au-delà de 11 audios (Mission 1)', async () => {
+      if (typeof ZIP_MAX_ENTRIES === 'undefined' || typeof Zip === 'undefined') throw new Skip('pas de projet portable dans cette version');
+      if (!window.JACK22_M1) { for (const u of ['/tools/m1-tests.js', 'm1-tests.js', 'tests/m1-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_M1; if (!M) throw new Skip('m1-tests.js introuvable à côté de la suite');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const prev = ProjectTransfer.snapshot();
+      try {
+        const z = await M.zipLimits(), bad = z.filter(x => (x.audios <= 27) !== (x.lecture === 'ok'));
+        if (bad.length) throw Error('limites ZIP : ' + bad.map(x => x.audios + ' audios → ' + x.lecture).join(' ; '));
+        for (const n of [12, 27]) { const r = await M.roundTrip(n); if (!r.identique || r.clips !== n) throw Error(n + ' audios : ' + r.import); }
+        const t = await M.tooMany(); if (t.archiveProposee) throw Error('28 audios : archive proposée malgré la limite');
+      } finally { ProjectTransfer.rollback(prev); await sleep(300); }
+      return 'ZIP lu de 0 à 27 audios, 28 refusé ; 12 et 27 audios exportés puis rouverts à l’identique ; projet remis';
+    }],
     ['21 Aucune erreur JavaScript', async () => {
       // « ResizeObserver loop… » : simple avis du navigateur (une mise en page refaite à l'image suivante), pas une erreur du studio.
       const real = errors.filter(e => !/^alert:/.test(e) && !/^ResizeObserver loop/.test(e));
