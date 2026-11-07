@@ -1,4 +1,4 @@
-JACK22 11.5 + Claude - Mission 1 (projets fiables) - CANDIDATE
-Base : JACK22-STUDIO-11.5-CLAUDE-MAQUETTES.html (SHA-256 03d69db7...), design inchange.
-Correction : un projet portable (.jack22.zip) avec plus de 11 fichiers audio se rouvre ; l'export relit l'archive avant de la proposer.
-Ouvrir ouvrir-dans-Edge.cmd. Travailler sur une copie de projet. Lire JACK22-11.5-MISSION1-RENDU.md.
+JACK22 11.5 + Claude - Mission 6 (sampler et batterie) - CANDIDATE
+Base : JACK22-STUDIO-11.5-CLAUDE-M5-NOTES.html (SHA-256 31616bc8...), design inchange.
+Sampler : pads (8), batterie echantillonnee, choke, banques, ADSR et decoupe ; Projet > Sampler, pads et batterie.
+Ouvrir ouvrir-dans-Edge.cmd. Travailler sur une copie de projet. Lire JACK22-11.5-MISSION6-RENDU.md.

@@ -1,7 +1,19 @@
 {
-    "JACK22-STUDIO-11.5-CLAUDE-M1-PROJETS.html":  "482bef1c8204343fd75f2dcd23d0b814e2d55137e2499ac9812f37a1ac570fd9",
-    "tests/lot8-tests.js":  "d1b801b32b837c9d3eaa3e8a6292e8795bfc787406b46245cf9a44af36c2f328",
+    "JACK22-11.5-MISSION6-RENDU.md":  "919871c392eee19daf077e2a94ace89263cc3f20d0fc57019ae73f93fa5d26a4",
+    "JACK22-STUDIO-11.5-CLAUDE-M6-SAMPLER.html":  "198e7238d61508cb79e567b2c69b4d5f3f01385aa361f27d8415f51b0994d837",
+    "LIRE-MOI.txt":  "e362e004cba3d85d31c4eb1b49bff1cf5838fc51c1d4aac14a02e05aa883eb2c",
+    "ouvrir-dans-Edge.cmd":  "193d9093e38eb3baab5836b4ae0175f46241146c1717f9a278477ac61503e987",
+    "sources/c130-sampler.html":  "1a2e69f194b35a693f18025d01b8a1c64eaa14b2f70152594a0c679f9fd3da92",
+    "tests/fakemic.js":  "4e5e3b23afb845b4026dd75d7a229fd8a4ef76c21e4d5ebc72b4c2f473e4ee09",
+    "tests/lot8-tests.js":  "627df262f0c4a67e6a795e794ef0c79c788daeefb4c0eaccd1b3228fc0261cf8",
     "tests/m1-tests.js":  "59eb413cc2427dc612c903ebe8299f7f6462e0c8927b7f0b7c2e27be46413f5a",
-    "tests/package125.ps1":  "0ccc316a05fce2dcdb4a9b816fc654e4c6778d9c2e7bd674187c30b1ec36ea9c",
-    "base (11.5 maquettes auditee)":  "03d69db75b32b24fafdb7a27840f7df8460f5a0d0db250d04e36458848c09d2c"
+    "tests/m2-tests.js":  "1fff681846ed253bc0485b12569c2a3c2930b222f0eb2727cf28041fe6e1c4e7",
+    "tests/m3-bench.js":  "d66a56c249afc427e627660bc3fb0b6c78abb54c2aec92d275a422a0bb2a6fb8",
+    "tests/m3-tests.js":  "512f1a7e0ecced2ac21f8f119fa6f78e3c6e4575a36d006acc97613095d6d661",
+    "tests/m4-tests.js":  "9947f99090caf073a5c39ca804c39b9900ad58bf17b5738af2c0ab8e5e474979",
+    "tests/m5-tests.js":  "60eab0a1a82e14ff557052b69ff125412aed4b3ca2e560f6e2fc86ebc821b06c",
+    "tests/m6-patches.txt":  "95202b288c5fa7f8af5303a3dfae62196a116cd2784d10e8baabf5a8aa89f87c",
+    "tests/m6-tests.js":  "32a71b0ab0403b4830a41b711a2b417591c09e886b96d0391246a080495f4772",
+    "tests/package130.ps1":  "25412a6b2e11c539c372be4e3033eb1ae74334773b74629402e1cdb175026c79",
+    "base (Mission 5)":  "31616bc8b5b1fe6460b8bc170315fee9cc30a97e5af649ce8eab853e8c859002"
 }

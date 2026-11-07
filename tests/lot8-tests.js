@@ -552,8 +552,8 @@
       // Instantané par emplacement (l'arrangement est redessiné à la sortie : ses éléments sont recréés à l'identique).
       const snap = () => { window.scrollTo(0, 0); const main = document.querySelector('main.dockApp'), m = new Map();
         const key = e => { const p = []; for (let x = e; x && x !== main; x = x.parentElement) { if (x.id) { p.unshift('#' + x.id); break; } const sib = [...x.parentElement.children].filter(c => c.tagName === x.tagName); p.unshift(x.tagName.toLowerCase() + '[' + sib.indexOf(x) + ']' + (typeof x.className === 'string' && x.className ? '.' + x.className.split(' ')[0] : '')); } return p.join('>'); };
-        // Barre du haut exclue : le témoin ● de Sauvegarder y change selon l'état du projet, sans lien avec le mode Pro.
-        for (const e of main.querySelectorAll('*')) { if (e.closest('#dockDrawer') || e.closest('#dockHeader .transport') || e.closest('#j93Library') || e.closest('details:not([open])>:not(summary)')) continue; const r = e.getBoundingClientRect(); if (!r.width && !r.height) continue; const s = getComputedStyle(e); m.set(key(e), [r.left, r.top, r.width, r.height].map(Math.round).join() + '|' + s.color + '|' + s.opacity); } return m; };
+        // Barre du haut et guide « premiers pas » exclus : le témoin ● de Sauvegarder et les étapes du guide changent selon l'état du projet, sans lien avec le mode Pro.
+        for (const e of main.querySelectorAll('*')) { if (e.closest('#dockDrawer') || e.closest('#dockHeader .transport') || e.closest('#c121Guide') || e.closest('#j93Library') || e.closest('details:not([open])>:not(summary)')) continue; const r = e.getBoundingClientRect(); if (!r.width && !r.height) continue; const s = getComputedStyle(e); m.set(key(e), [r.left, r.top, r.width, r.height].map(Math.round).join() + '|' + s.color + '|' + s.opacity); } return m; };
       const before = snap(), parents = new Map(P.WINS.map(id => [id, $(id)?.parentElement])), selParent = document.querySelector('.dockSelection').parentElement;
       // Entrée par le menu Projet.
       document.querySelector('.dockProject').open = true; $('c92Enter').click(); await sleep(150);
@@ -817,7 +817,7 @@
     }],
     ['34 Projet portable au-delà de 11 audios (Mission 1)', async () => {
       if (typeof ZIP_MAX_ENTRIES === 'undefined' || typeof Zip === 'undefined') throw new Skip('pas de projet portable dans cette version');
-      if (!window.JACK22_M1) { for (const u of ['/tools/m1-tests.js', 'm1-tests.js', 'tests/m1-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      if (!window.JACK22_M1) { for (const u of ['m1-tests.js', 'tests/m1-tests.js', '/m6/m1-tests.js', '/tools/m1-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
       const M = window.JACK22_M1; if (!M) throw new Skip('m1-tests.js introuvable à côté de la suite');
       stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
       const prev = ProjectTransfer.snapshot();
@@ -828,6 +828,42 @@
         const t = await M.tooMany(); if (t.archiveProposee) throw Error('28 audios : archive proposée malgré la limite');
       } finally { ProjectTransfer.rollback(prev); await sleep(300); }
       return 'ZIP lu de 0 à 27 audios, 28 refusé ; 12 et 27 audios exportés puis rouverts à l’identique ; projet remis';
+    }],
+    ['35 Historique cohérent (Mission 2)', async () => {
+      if (!window.Jack22Vision8 || !$('v8Undo')) throw new Skip('pas d’historique de projet dans cette version');
+      if (!window.JACK22_M2) { for (const u of ['m2-tests.js', 'tests/m2-tests.js', '/m6/m2-tests.js', '/tools/m2-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_M2; if (!M) throw new Skip('m2-tests.js introuvable à côté de la suite');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const r = await M.run(), bad = r.filter(x => !x.ok);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return r.length + ' cas réussis : gestes, clics, clavier, lecture, voix, file d’attente, plafond de 24 états';
+    }],
+    ['36 Montage non destructif (Mission 4)', async () => {
+      if (!window.JACK22_AUDIO_EDIT || !window.JACK22_AUDIO_EDIT.setEdit) throw new Skip('pas de montage non destructif dans cette version');
+      if (!window.JACK22_M4) { for (const u of ['m4-tests.js', 'tests/m4-tests.js', '/m6/m4-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_M4; if (!M) throw new Skip('m4-tests.js introuvable à côté de la suite');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const r = await M.run(), bad = r.filter(x => !x.ok);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return r.length + ' cas réussis : coupe, fondus, écoute = WAV, découpe, sélection multiple, bords, chevauchements, tête de lecture, sauvegarde';
+    }],
+    ['37 Piano Roll : décalage fin, humanisation, écoute = WAV (Mission 5)', async () => {
+      if (!window.J22Off) throw new Skip('pas de décalage fin des notes dans cette version');
+      if (!window.JACK22_M5) { for (const u of ['m5-tests.js', 'tests/m5-tests.js', '/m6/m5-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_M5; if (!M) throw new Skip('m5-tests.js introuvable à côté de la suite');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const r = await M.run(), bad = r.filter(x => !x.ok);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return r.length + ' cas réussis : écoute = WAV (PATTERN et SONG), humaniser, force de quantification, édition fine, sauvegarde et MIDI, changement de pattern';
+    }],
+    ['38 Sampler, pads et batterie (Mission 6)', async () => {
+      if (!window.JACK22_SAMPLER130) throw new Skip('pas de pads échantillonnés dans cette version');
+      if (!window.JACK22_M6) { for (const u of ['m6-tests.js', 'tests/m6-tests.js', '/m6/m6-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_M6; if (!M) throw new Skip('m6-tests.js introuvable à côté de la suite');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const r = await M.run(), bad = r.filter(x => !x.ok);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return r.length + ' cas réussis : batterie échantillonnée (écoute = WAV), choke, ADSR et découpe, sampler mélodique, banques, annulation et sauvegarde, aide';
     }],
     ['21 Aucune erreur JavaScript', async () => {
       // « ResizeObserver loop… » : simple avis du navigateur (une mise en page refaite à l'image suivante), pas une erreur du studio.
