@@ -1,0 +1,33 @@
+<style id="c135Style">
+/* 6.5 — Le message de prise du Clavier (« Prise : 3 notes · 2 mesures. REC pour en refaire une… ») passait sous la ligne
+   des boutons et le clavier le recouvrait (défaut déjà présent avant : la zone des boutons a une hauteur fixe d'une ligne).
+   Il s'affiche maintenant dans la place libre à gauche de « Clavier », sur la même ligne, raccourci par « … » si besoin
+   (texte complet au survol). L'élément n'est pas déplacé (le studio le range lui-même) ; seuls les boutons restent où ils sont. */
+@media (min-width:700px){
+html body #synth#synth.c135On #j108Performance{position:static!important}
+html body #synth#synth.c135On #j108Performance>#recStatus{position:absolute!important;left:var(--c135x,20px)!important;top:var(--c135y,8px)!important;width:var(--c135w,300px)!important;height:28px!important;line-height:28px!important;margin:0!important;padding:0!important;font-size:11px!important;min-height:0!important;color:var(--mut,#9aa1a9)!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;text-align:left!important;z-index:2}
+html body #synth#synth.c135Tight #j108Performance>#recStatus{display:none!important}
+}
+</style>
+<script id="c135Script">(() => {
+ // Mesure la place libre à gauche de la barre du Clavier et y pose le message de prise.
+ const fit = () => {
+  const sy = document.getElementById('synth'), s = document.getElementById('recStatus'), tb = sy?.querySelector('.dockSynthToolbar');
+  if (!sy || !s || !tb || !sy.offsetWidth || !document.getElementById('j108Performance')?.contains(s)) { sy?.classList.remove('c135On', 'c135Tight'); return; }
+  const r = sy.getBoundingClientRect(), t = tb.getBoundingClientRect(), first = [...tb.children].find(e => e !== s && e.getBoundingClientRect().width > 0);
+  const left = t.left - r.left + 6, right = (first ? first.getBoundingClientRect().left : t.right) - r.left - 10, w = Math.round(right - left);
+  sy.style.setProperty('--c135x', Math.round(left) + 'px'); sy.style.setProperty('--c135y', Math.round(t.top - r.top + (t.height - 28) / 2) + 'px'); sy.style.setProperty('--c135w', w + 'px');
+  sy.classList.add('c135On'); sy.classList.toggle('c135Tight', w < 90);
+  s.title = s.textContent.trim();
+ };
+ const start = () => {
+  const sy = document.getElementById('synth'), s = document.getElementById('recStatus'); if (!sy || !s) return false;
+  new ResizeObserver(fit).observe(sy);
+  new MutationObserver(fit).observe(s, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+  document.addEventListener('j105view', () => setTimeout(fit, 60));
+  new MutationObserver(() => setTimeout(fit, 60)).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  addEventListener('resize', fit); fit(); return true;
+ };
+ if (!start()) { const t = setInterval(() => { if (start()) clearInterval(t); }, 300); setTimeout(() => clearInterval(t), 30000); }
+ window.JACK22_MSG135 = { version: '11.5-claude-6.5-message-prise', fit };
+})();</script>

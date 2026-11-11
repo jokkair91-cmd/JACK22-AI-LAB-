@@ -153,7 +153,9 @@
       const num = document.querySelectorAll('#tlRows .tl-ruler .tl-num')[bar], r = num.getBoundingClientRect(), x = r.left + TL_BAR_W * ((want % 16) + 0.1) / 16;
       ptr(num, 'pointerdown', x, r.top + 5); ptr(num, 'pointerup', x, r.top + 5);
       const cur = window.JACK22_C128.cursor; if (cur !== want) throw Error('tête à ' + cur + ' au lieu de ' + want);
-      const h = $('tlHead'); if (h.style.display !== 'block' || Math.abs(parseFloat(h.style.left) - (TL_LABEL_W + want / 16 * TL_BAR_W)) > 1) throw Error('ligne rouge non affichée à la tête');
+      // Position mesurée à l'écran (6.1) : la ligne doit tomber sur l'endroit de la règle qui correspond à la tête, quelle que soit la mise en page.
+      const h = $('tlHead'), n0 = document.querySelector('#tlRows .tl-ruler .tl-num').getBoundingClientRect(), wantX = n0.left + want / 16 * n0.width, gotX = h.getBoundingClientRect().left;
+      if (h.style.display !== 'block' || Math.abs(gotX - wantX) > 2) throw Error('ligne rouge à ' + gotX.toFixed(1) + ' px au lieu de ' + wantX.toFixed(1) + ' px');
       $('play').click(); await sleep(250); const first = stepLog[0]?.abs; const playingA = audioPlaying.some(p => p.c.name === NA); stop();
       if (first !== want) throw Error('lecture partie de ' + first + ' au lieu de ' + want);
       if (!playingA) throw Error('le clip en cours ne joue pas');

@@ -776,7 +776,10 @@
       const prod = JACK22_PRODUCTION.config; prod.clips = prod.clips || {}; prod.clips[c2.id] = { mute: true, archivedVoice: JSON.parse(JSON.stringify(c1.voice)) };
       const v = VoiceStore.capture(); v.production97 = prod; VoiceStore.setText(v); tlBuild(); await sleep(700);
       const rows = () => [...document.querySelectorAll('#c120Takes li')];
-      if (rows().length < 2) throw Error('les deux prises ne sont pas listées');
+      // La liste se rafraîchit toutes les 0,3 s ; dans une page de test laissée en arrière-plan, le navigateur ralentit
+      // cette minuterie (jusqu'à une fois par minute) : on attend donc la mise à jour au lieu d'un délai fixe.
+      await until(() => rows().length >= 2, 65000, 200).catch(() => {});
+      if (rows().length < 2) throw Error('les deux prises ne sont pas listées (prises calculées : ' + V.takes().length + ', onglet : ' + [...document.querySelectorAll('#j109VoiceTabs button')].map(b => b.textContent.trim() + '=' + b.getAttribute('aria-pressed')).join('/') + ', liste ' + ($('c120Takes')?.offsetWidth || 0) + ' px, page ' + (document.hidden ? 'cachée' : 'visible') + ')');
       const cb = rows().map(l => l.querySelector('input')).find(i => i && !i.disabled); cb.click(); await sleep(400);
       const btn = [...document.querySelectorAll('#c120Takes button')].find(x => x.textContent === 'Remplacer sur la piste');
       if (btn.disabled) throw Error('« Remplacer sur la piste » grisé après avoir coché');
@@ -817,7 +820,7 @@
     }],
     ['34 Projet portable au-delà de 11 audios (Mission 1)', async () => {
       if (typeof ZIP_MAX_ENTRIES === 'undefined' || typeof Zip === 'undefined') throw new Skip('pas de projet portable dans cette version');
-      if (!window.JACK22_M1) { for (const u of ['m1-tests.js', 'tests/m1-tests.js', '/m6/m1-tests.js', '/tools/m1-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      if (!window.JACK22_M1) { for (const u of ['m1-tests.js', 'tests/m1-tests.js', '/d5/m1-tests.js', '/tools/m1-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
       const M = window.JACK22_M1; if (!M) throw new Skip('m1-tests.js introuvable à côté de la suite');
       stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
       const prev = ProjectTransfer.snapshot();
@@ -831,7 +834,7 @@
     }],
     ['35 Historique cohérent (Mission 2)', async () => {
       if (!window.Jack22Vision8 || !$('v8Undo')) throw new Skip('pas d’historique de projet dans cette version');
-      if (!window.JACK22_M2) { for (const u of ['m2-tests.js', 'tests/m2-tests.js', '/m6/m2-tests.js', '/tools/m2-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      if (!window.JACK22_M2) { for (const u of ['m2-tests.js', 'tests/m2-tests.js', '/d5/m2-tests.js', '/tools/m2-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
       const M = window.JACK22_M2; if (!M) throw new Skip('m2-tests.js introuvable à côté de la suite');
       stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
       const r = await M.run(), bad = r.filter(x => !x.ok);
@@ -840,7 +843,7 @@
     }],
     ['36 Montage non destructif (Mission 4)', async () => {
       if (!window.JACK22_AUDIO_EDIT || !window.JACK22_AUDIO_EDIT.setEdit) throw new Skip('pas de montage non destructif dans cette version');
-      if (!window.JACK22_M4) { for (const u of ['m4-tests.js', 'tests/m4-tests.js', '/m6/m4-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      if (!window.JACK22_M4) { for (const u of ['m4-tests.js', 'tests/m4-tests.js', '/d5/m4-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
       const M = window.JACK22_M4; if (!M) throw new Skip('m4-tests.js introuvable à côté de la suite');
       stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
       const r = await M.run(), bad = r.filter(x => !x.ok);
@@ -849,7 +852,7 @@
     }],
     ['37 Piano Roll : décalage fin, humanisation, écoute = WAV (Mission 5)', async () => {
       if (!window.J22Off) throw new Skip('pas de décalage fin des notes dans cette version');
-      if (!window.JACK22_M5) { for (const u of ['m5-tests.js', 'tests/m5-tests.js', '/m6/m5-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      if (!window.JACK22_M5) { for (const u of ['m5-tests.js', 'tests/m5-tests.js', '/d5/m5-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
       const M = window.JACK22_M5; if (!M) throw new Skip('m5-tests.js introuvable à côté de la suite');
       stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
       const r = await M.run(), bad = r.filter(x => !x.ok);
@@ -858,12 +861,59 @@
     }],
     ['38 Sampler, pads et batterie (Mission 6)', async () => {
       if (!window.JACK22_SAMPLER130) throw new Skip('pas de pads échantillonnés dans cette version');
-      if (!window.JACK22_M6) { for (const u of ['m6-tests.js', 'tests/m6-tests.js', '/m6/m6-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      if (!window.JACK22_M6) { for (const u of ['m6-tests.js', 'tests/m6-tests.js', '/d5/m6-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
       const M = window.JACK22_M6; if (!M) throw new Skip('m6-tests.js introuvable à côté de la suite');
       stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
       const r = await M.run(), bad = r.filter(x => !x.ok);
       if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
       return r.length + ' cas réussis : batterie échantillonnée (écoute = WAV), choke, ADSR et découpe, sampler mélodique, banques, annulation et sauvegarde, aide';
+    }],
+    ['39 Disposition maquette au choix (6.2)', async () => {
+      if (!window.JACK22_DISPOSITION) throw new Skip('pas de disposition maquette dans cette version');
+      if (!window.JACK22_D1) { for (const u of ['d1-tests.js', 'tests/d1-tests.js', '/d5/d1-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_D1; if (!M) throw new Skip('d1-tests.js introuvable à côté de la suite');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const r = await M.run(), bad = r.filter(x => !x.ok);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return r.length + ' cas réussis : aller-retour exact, barre du haut, batterie, débordement, boutons nommés, mémorisation';
+    }],
+    ['40 Style 6.3 : agencement d’origine + design 6.2', async () => {
+      if (!window.JACK22_STYLE133) throw new Skip('pas de style 6.3 dans cette version');
+      if (!window.JACK22_D2) { for (const u of ['d2-tests.js', 'tests/d2-tests.js', '/d5/d2-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_D2; if (!M) throw new Skip('d2-tests.js introuvable à côté de la suite');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const r = await M.run(), bad = r.filter(x => !x.ok);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return r.length + ' cas réussis : rien déplacé, pistes sur toute la hauteur, menus au premier plan, batterie rouge, bouton ●, aucun débordement';
+    }],
+    ['41 Retouches 6.4 : doublons, Console, clavier vert, volume', async () => {
+      if (!window.JACK22_STYLE134) throw new Skip('pas de retouches 6.4 dans cette version');
+      if (!window.JACK22_D3) { for (const u of ['d3-tests.js', 'tests/d3-tests.js', '/d5/d3-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_D3; if (!M) throw new Skip('d3-tests.js introuvable à côté de la suite');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const r = await M.run(), bad = r.filter(x => !x.ok);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return r.length + ' cas réussis : doublons retirés, Console sur une ligne, clavier vert, notes vertes, volume synthé, aucun débordement';
+    }],
+    ['42 Message de prise du Clavier visible (6.5)', async () => {
+      if (!window.JACK22_MSG135) throw new Skip('pas de correction du message de prise dans cette version');
+      if (window.JACK22_MSG136) throw new Skip('remplacé par le test 43 (6.6 : vraie prise, départ et retour, toutes largeurs)');
+      if (!window.JACK22_D4) { for (const u of ['d4-tests.js', 'tests/d4-tests.js', '/d5/d4-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_D4; if (!M) throw new Skip('d4-tests.js introuvable à côté de la suite');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const r = await M.run(), bad = r.filter(x => !x.ok);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return r.length + ' cas réussis : message lisible, boutons et clavier immobiles, message toujours rangé par le studio';
+    }],
+    ['43 Message de prise : vraie prise, départ et retour (6.6)', async () => {
+      if (!window.JACK22_MSG136) throw new Skip('pas de Mission 0 (6.6) dans cette version');
+      if (innerWidth < 700) throw new Skip('téléphone hors périmètre (ordinateur seulement) : non exécuté');
+      if (!window.JACK22_D5) { for (const u of ['d5-tests.js', 'tests/d5-tests.js', '/d5/d5-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_D5; if (!M) throw new Skip('d5-tests.js introuvable à côté de la suite');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const r = await M.run(), bad = r.filter(x => x.ok === false);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return r.map(x => x.cas.slice(0, 22) + ' : ' + String(x.detail).slice(0, 90)).join(' | ');
     }],
     ['21 Aucune erreur JavaScript', async () => {
       // « ResizeObserver loop… » : simple avis du navigateur (une mise en page refaite à l'image suivante), pas une erreur du studio.
