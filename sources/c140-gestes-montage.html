@@ -1,0 +1,100 @@
+<style id="c140Style">
+/* 7.0 — M2 « Gestes de montage » : barre d'outils de clip dans l'Arrangement. Thème noir et rouge inchangé. */
+#c140Clip{display:inline-flex;align-items:center;gap:5px;margin-left:8px;flex-wrap:wrap}
+#c140Clip .c140Gain{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#9aa1a9}
+#c140Clip .c140Gain input{width:90px}
+#c140Clip button[aria-pressed="false"].c140Snap{opacity:.7}
+#timeline .tl-aud .c140Badge{position:absolute;right:4px;top:2px;font-size:10px;padding:0 4px;border-radius:3px;background:#111316cc;color:#e7e8ea;pointer-events:none}
+</style>
+<script id="c140Script">(() => {
+ 'use strict';
+ const $ = id => document.getElementById(id), A = () => window.JACK22_AUDIO_EDIT;
+ const say = t => { try { audioMsg(t); } catch (e) { try { setStatus(t); } catch (x) {} } };
+ let gains = {};                                   // gain par clip, en dB (absent = 0 dB : rien ne change)
+ let clipboard = [];                               // [{id, rel, lane}] : copie (les sources ne sont jamais modifiées)
+ let snap = true; try { snap = localStorage.getItem('jack22.snap140') !== 'off'; } catch (e) {}
+ const sel = () => { try { return A()?.selection || []; } catch (e) { return []; } };
+ const remember = () => { try { window.Jack22Vision8?.remember(); } catch (e) {} };
+ const busy = () => { try { return state !== 'stopped' || persistBusy || window.Jack22Lot3?.pending; } catch (e) { return false; } };
+ // Position de la tête de lecture (barre du bas « mesure.temps.pas.ms »), en secondes.
+ const headSec = () => { const t = $('c119Pos')?.textContent || ''; const m = t.match(/(\d+)\.(\d+)\.(\d+)\.(\d+)/); if (!m) return 0; const step = (m[1] - 1) * 16 + (m[2] - 1) * 4 + (m[3] - 1); return step * stepSec() + m[4] / 1000; };
+
+ // ---- Gain du clip : appliqué par la même enveloppe que les fondus, en lecture ET dans le WAV ----
+ const edit0 = window.J22ClipEdit;
+ window.J22ClipEdit = c => { const ed = edit0(c); const db = gains[c?.id]; if (ed && db) ed.gain = Math.pow(10, db / 20); return ed; };
+ const env0 = window.J22Env;
+ window.J22Env = (p, when, offset, ed) => {
+  const g = ed && ed.gain; if (!g || g === 1) return env0(p, when, offset, ed);
+  const q = { setValueAtTime: (v, t) => p.setValueAtTime(v * g, t), linearRampToValueAtTime: (v, t) => p.linearRampToValueAtTime(v * g, t) };
+  return env0(q, when, offset, ed);
+ };
+ // Sauvegarde : les gains voyagent avec le projet (ancien projet sans gains = tout à 0 dB).
+ const check = v => { if (v === undefined || v === null) return {}; if (typeof v !== 'object' || Array.isArray(v)) throw Error('Gains de clips invalides.'); const out = {}; for (const [k, d] of Object.entries(v)) { if (!Number.isFinite(d) || d < -24 || d > 12) throw Error('Gain de clip invalide.'); if (d) out[k] = Math.round(d * 10) / 10; } return out; };
+ const cap = VoiceStore.capture, parse = VoiceStore.parse, set = VoiceStore.setText;
+ VoiceStore.capture = function () { return { ...cap.call(this), gains140: { ...gains } }; };
+ VoiceStore.parse = function (v) { const r = parse.call(this, v); if (!r) return r; try { return { ...r, gains140: check(v && v.gains140) }; } catch (e) { return false; } };
+ VoiceStore.setText = function (v) { const next = check(v && v.gains140); const r = set.call(this, v); gains = next; return r; };
+
+ // ---- Aimantation : désactivée = comme si Alt était tenu pendant le glisser (réglage existant) ----
+ const free = e => { if (!snap && e.target?.closest?.('#timeline .tl-aud')) try { Object.defineProperty(e, 'altKey', { get: () => true }); } catch (x) {} };
+ ['pointerdown', 'pointermove', 'pointerup'].forEach(t => document.addEventListener(t, free, true));
+
+ // ---- Barre d'outils ----
+ const bar = document.createElement('span'); bar.id = 'c140Clip'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Outils du clip audio');
+ const btn = (txt, title, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = txt; b.title = title; b.onclick = fn; bar.append(b); return b; };
+ const bCopy = btn('Copier', 'Copier le ou les clips sélectionnés (Ctrl+C)', () => copy());
+ const bPaste = btn('Coller', 'Coller à la tête de lecture, sur la piste de destination (Ctrl+V)', () => paste());
+ const bCut = btn('Couper', 'Couper le clip en deux à la tête de lecture (S)', () => cut());
+ const bDup = btn('Dupliquer', 'Dupliquer le clip juste après lui', () => dup());
+ const bXf = btn('Fondu croisé →', 'Fondu croisé avec le clip suivant de la même piste (ils doivent se chevaucher)', () => xfade());
+ const gl = document.createElement('label'); gl.className = 'c140Gain'; gl.textContent = 'Gain ';
+ const gIn = document.createElement('input'); gIn.type = 'range'; gIn.min = '-24'; gIn.max = '12'; gIn.step = '0.5'; gIn.value = '0'; gIn.setAttribute('aria-label', 'Gain du clip (dB)');
+ const gOut = document.createElement('span'); gOut.textContent = '0 dB'; gl.append(gIn, gOut); bar.append(gl);
+ const bSnap = btn('⌗ Aimantation', 'Aimantation à la grille (désactivée : placement libre, comme Alt)', () => { snap = !snap; try { localStorage.setItem('jack22.snap140', snap ? 'on' : 'off'); } catch (e) {} refresh(); say(snap ? 'Aimantation activée : les clips se calent sur la grille.' : 'Aimantation désactivée : placement libre.'); });
+ bSnap.classList.add('c140Snap');
+
+ const refresh = () => {
+  const s = sel(), one = s.length === 1;
+  bCopy.disabled = !s.length; bPaste.disabled = !clipboard.length; bCut.disabled = !one; bDup.disabled = !one; bXf.disabled = !one; gIn.disabled = !s.length;
+  const db = one ? (gains[s[0]] || 0) : 0; gIn.value = String(db); gOut.textContent = (db > 0 ? '+' : '') + db + ' dB';
+  bSnap.setAttribute('aria-pressed', String(snap));
+  document.querySelectorAll('#timeline .tl-aud[data-audio]').forEach(el => { const id = Number(el.dataset.audio), d = gains[id]; let b = el.querySelector('.c140Badge'); if (d) { if (!b) { b = document.createElement('span'); b.className = 'c140Badge'; el.append(b); } b.textContent = (d > 0 ? '+' : '') + d + ' dB'; } else b?.remove(); });
+ };
+ const guard = () => { if (busy()) { say('Arrête la lecture ou attends la fin de l’opération en cours.'); return false; } return true; };
+ function copy() { const s = sel(); if (!s.length) return false; const items = s.map(id => ({ id, at: A().seconds(audioClips.find(c => c.id === id)), lane: A().lane(id) })); const t0 = Math.min(...items.map(i => i.at)); clipboard = items.map(i => ({ id: i.id, rel: i.at - t0, lane: i.lane })); refresh(); say(clipboard.length + ' clip(s) copié(s). « Coller » les pose à la tête de lecture.'); return true; }
+ async function paste() {
+  if (!clipboard.length || !guard()) return false;
+  const at = headSec(), dest = window.JACK22_TRACKS139?.target || null, made = []; remember();
+  try {
+   for (const it of clipboard) {
+    if (!audioClips.some(c => c.id === it.id)) continue;
+    const before = new Set(audioClips.map(c => c.id)); await A().duplicate(it.id);
+    const n = audioClips.find(c => !before.has(c.id)); if (!n) continue;
+    A().place(n.id, Math.max(0, at + it.rel), dest || it.lane); if (gains[it.id]) gains[n.id] = gains[it.id]; made.push(n.id);
+   }
+  } catch (e) { say('Collage incomplet : ' + e.message); }
+  if (made.length) { A().select(made); say(made.length + ' clip(s) collé(s) à ' + at.toFixed(2) + ' s' + (dest ? ' sur la piste de destination' : '') + '. Les fichiers d’origine ne changent pas.'); }
+  tlBuild(); return made.length > 0;
+ }
+ async function cut() { const s = sel(); if (s.length !== 1 || !guard()) return; try { await A().splitAt(s[0], headSec()); say('Clip coupé en deux à la tête de lecture, sans toucher au fichier.'); } catch (e) { say(e.message); } tlBuild(); }
+ async function dup() { const s = sel(); if (s.length !== 1 || !guard()) return; try { await A().duplicate(s[0]); say('Copie créée juste après le clip.'); } catch (e) { say(e.message); } tlBuild(); }
+ async function xfade() {
+  const s = sel(); if (s.length !== 1 || !guard()) return; const c = audioClips.find(x => x.id === s[0]); if (!c) return;
+  const lane = A().lane(c.id), t = A().seconds(c), next = audioClips.filter(o => o.id !== c.id && !o.missing && A().lane(o.id) === lane && A().seconds(o) > t).sort((a, b) => A().seconds(a) - A().seconds(b))[0];
+  if (!next) { say('Pas de clip après celui-ci sur la même piste.'); return; }
+  try { await A().crossfade(c.id, next.id); say('Fondu croisé créé. Les deux sources restent conservées.'); } catch (e) { say('Fondu croisé impossible : ' + e.message); } tlBuild();
+ }
+ gIn.oninput = () => { const v = Number(gIn.value); gOut.textContent = (v > 0 ? '+' : '') + v + ' dB'; };
+ gIn.onchange = () => { const s = sel(); if (!s.length) return; if (busy()) { say('Arrête la lecture pour régler le gain.'); refresh(); return; } remember(); const v = Number(gIn.value); for (const id of s) { if (v) gains[id] = v; else delete gains[id]; } tlBuild(); say('Gain de ' + s.length + ' clip(s) : ' + (v > 0 ? '+' : '') + v + ' dB (lecture et WAV).'); };
+ document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey || /input|textarea|select/i.test(e.target?.tagName || '') || e.target?.isContentEditable) return;
+  if (!$('timeline')?.offsetWidth) return;
+  if ((e.key === 'c' || e.key === 'C') && sel().length) { e.preventDefault(); copy(); }
+  else if ((e.key === 'v' || e.key === 'V') && clipboard.length) { e.preventDefault(); paste(); }
+ });
+ const placeUi = () => { const anchor = $('c139Tools') || $('audioImport'); if (!anchor || !A()) return false; if (!bar.isConnected) anchor.after(bar); refresh(); return true; };
+ const build0 = tlBuild; tlBuild = function () { const r = build0.apply(this, arguments); try { placeUi(); } catch (e) {} return r; };
+ document.addEventListener('pointerup', () => setTimeout(refresh, 30), true);
+ if (!placeUi()) { const t = setInterval(() => { if (placeUi()) clearInterval(t); }, 300); setTimeout(() => clearInterval(t), 30000); }
+ window.JACK22_EDIT140 = { version: '11.5-claude-7.0-gestes-montage', get gains() { return { ...gains }; }, setGain: (id, db) => { if (db) gains[id] = db; else delete gains[id]; tlBuild(); }, copy, paste, cut, dup, xfade, get snap() { return snap; }, set snap(v) { snap = !!v; refresh(); }, headSec };
+})();</script>

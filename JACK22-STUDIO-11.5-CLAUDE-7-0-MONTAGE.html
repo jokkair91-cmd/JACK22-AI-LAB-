@@ -1,4 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="jack22-build" content="JACK22-11.5-CLAUDE-6.6"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JACK22 STUDIO - 11.5 + Claude (packs, afro, maquettes) - Patterns et prises voix</title><style>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="jack22-build" content="JACK22-11.5-CLAUDE-7.0"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JACK22 STUDIO - 11.5 + Claude (packs, afro, maquettes) - Patterns et prises voix</title><style>
 :root{font-family:Inter,Arial,sans-serif;color:#f5f5f5;background:#101014}*{box-sizing:border-box}body{margin:0}.app{max-width:1100px;margin:auto;padding:28px}header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}h1{font-size:28px;letter-spacing:2px;margin:0}h1 span{color:#ff4545}.sub{color:#999;font-size:13px}button,input{font:inherit}button{cursor:pointer;border:0;border-radius:8px;padding:12px 17px;background:#292932;color:#fff}button:hover{filter:brightness(1.2)}button.primary{background:#e3313d;font-weight:700}.transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:28px 0;background:#1b1b22;padding:16px;border-radius:12px}input[type=number]{width:75px;background:#111116;border:1px solid #444;color:white;padding:10px;border-radius:7px}.panel{background:#1b1b22;padding:20px;border-radius:14px;overflow-x:auto}.legend{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;min-width:780px;margin-bottom:10px;color:#999;font-size:12px;text-align:center}.track{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;align-items:center;min-width:780px;margin-bottom:12px}.track-label{font-weight:700;font-size:13px}.step{aspect-ratio:1;border-radius:6px;background:#34343d;padding:0;border:1px solid #45454e}.step.active{background:#e3313d;border-color:#ff6c74}.step.playing{outline:3px solid #fff;outline-offset:1px}.step.beat{background:#454550}.step.beat.active{background:#f0444e}footer{color:#777;font-size:12px;margin-top:20px}.status{color:#bbb;font-size:13px}
 /* V1.1 : volume master (même style que le reste) */
 input[type=range]{width:120px;accent-color:#e3313d;cursor:pointer}.master-val{min-width:42px;color:#bbb;font-size:13px}
@@ -3591,7 +3591,7 @@ for(const b of document.querySelectorAll('[data-sample-note]'))b.onclick=()=>sam
 $8('v8SavePreset').onclick=()=>{try{const c=audioClips.find(c=>c.voice?.slot===Number($('l3Slot').value));if(!c)return message('Sélectionne une voix enregistrée.');const next=copy(state8);next.presets.push({name:$8('v8PresetName').value.trim(),settings:window.Jack22Lot3.settings(c)});state8=parse(next);syncPresets();later();message('Preset voix enregistré dans le projet.');}catch(e){message(e.message);}};
 function syncPresets(){const box=$8('v8Presets');box.replaceChildren();for(const p of state8.presets){const b=document.createElement('button');b.textContent=p.name;b.onclick=()=>{const c=audioClips.find(c=>c.voice?.slot===Number($('l3Slot').value));if(!c)return message('Choisis une voix dans les effets.');if(persistBusy||window.Jack22Voice.state.active)return;const checked=D.validate(p.settings);if(checked.edit.start+checked.edit.end>=c.duration-.05)return message('Ce preset découperait toute la prise : choisis une prise plus longue ou un autre preset.');c.voice.processing=checked;audioKill(c);window.Jack22Lot3.sync();window.Jack22Lot3.schedule();later();};box.append(b);}}
 function sync(){$8('v8Swing').value=state8.swing;$8('v8SwingValue').textContent=state8.swing+' %';$8('v8AutoOn').checked=state8.automation.on;$8('v8Curve').value=state8.automation.points.map(p=>p.bar+', '+p.level).join('\n');$8('v8LoopStatus').textContent=state8.loop.on?'Zone en boucle : mesures '+state8.loop.start+' à '+(state8.loop.end-1):'Boucle de zone arrêtée';syncSections();syncPresets();samplerOptions();syncHistory();}
-function diagnostics(){return {build:'JACK22-11.5-CLAUDE-6.6',time:new Date().toISOString(),available:{microAPI:!!navigator.mediaDevices?.getUserMedia,audioWorklet:typeof AudioWorkletNode!=='undefined',offlineRenderer:typeof OfflineAudioContext!=='undefined',storage:typeof indexedDB!=='undefined'},state:{clips:audioClips.length,voices:audioClips.filter(c=>c.voice).length,sourceSeconds:audioClips.reduce((n,c)=>n+c.duration,0),prepared:window.l3Ready(),dirty:ProjectPersistence.isDirty()},validation:{realBrowserTests:false,meaning:'Capacités détectées et état courant, pas une certification de fonctionnement.'}};}
+function diagnostics(){return {build:'JACK22-11.5-CLAUDE-7.0',time:new Date().toISOString(),available:{microAPI:!!navigator.mediaDevices?.getUserMedia,audioWorklet:typeof AudioWorkletNode!=='undefined',offlineRenderer:typeof OfflineAudioContext!=='undefined',storage:typeof indexedDB!=='undefined'},state:{clips:audioClips.length,voices:audioClips.filter(c=>c.voice).length,sourceSeconds:audioClips.reduce((n,c)=>n+c.duration,0),prepared:window.l3Ready(),dirty:ProjectPersistence.isDirty()},validation:{realBrowserTests:false,meaning:'Capacités détectées et état courant, pas une certification de fonctionnement.'}};}
 function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);}
 $8('v8Check').onclick=()=>{$8('v8Diag').textContent=JSON.stringify(diagnostics(),null,2);};
 $8('v8DownloadDiag').onclick=()=>download(new Blob([JSON.stringify(diagnostics(),null,2)],{type:'application/json'}),'JACK22-diagnostic.json');
@@ -7631,4 +7631,291 @@ html body #synth#synth.c136Tall #j108Performance>#recStatus.c116Idle{visibility:
  };
  if (!start()) { const t = setInterval(() => { if (start()) clearInterval(t); }, 300); setTimeout(() => clearInterval(t), 30000); }
  window.JACK22_MSG135 = window.JACK22_MSG136 = { version: '11.5-claude-6.6-message-prise', fit };
+})();</script>
+<script id="c137NotesLimites">/* 6.7 — Mission 0a : notes en début de pattern.
+   Défaut : le décalage fin d'une note (« off », Mission 5) pouvait la faire commencer avant la case 1 (start + off < 0)
+   après un déplacement, un collage ou une édition. L'éditeur l'acceptait, mais le lecteur de sauvegarde la refusait
+   en « tout ou rien » : tout le pattern, et même tout le projet, n'était plus rouvert.
+   Correction, sans toucher au code existant (fonctions enveloppées) :
+   1. après chaque édition, une note ne peut plus commencer avant la case 1 (son décalage est ramené au plus près) ;
+   2. à la réouverture, une note limite est réparée ; une note réellement illisible est ignorée seule, avec un message,
+      et le reste du pattern et du projet est conservé. */
+(() => {
+ 'use strict';
+ // Ramène une note dans les limites : start + off >= 0 et |off| < 0,5 pas. Renvoie true si la note a changé.
+ const fixNote = n => {
+  if (!n || typeof n !== 'object' || n.off === undefined) return false;
+  let o = Number(n.off); const was = n.off;
+  if (!Number.isFinite(o)) { delete n.off; return true; }
+  o = Math.max(-0.49, Math.min(0.49, o));
+  if (Number.isFinite(n.start) && n.start + o < 0) o = -n.start;
+  o = Math.round(o * 1e4) / 1e4;
+  if (Math.abs(o) < 1e-4) delete n.off; else n.off = o;
+  return n.off !== was;
+ };
+ const fixList = list => { let k = 0; if (Array.isArray(list)) for (const n of list) if (fixNote(n)) k++; return k; };
+ const stats = { repaired: 0, dropped: 0, edits: 0 };
+ let pendingMsg = 0;
+ const tell = () => {
+  if (!stats.dropped && !stats.repaired) return;
+  const parts = [];
+  if (stats.repaired) parts.push(stats.repaired + ' note(s) ramenée(s) au début du pattern');
+  if (stats.dropped) parts.push(stats.dropped + ' note(s) illisible(s) ignorée(s) — le reste du Piano Roll est conservé');
+  try { setStatus('Réouverture : ' + parts.join(' ; ') + '.'); } catch (e) {}
+ };
+
+ // 1. Lecteur de sauvegarde : réparer, puis ne jamais tout rejeter pour une note.
+ const parse0 = parseRollSave;
+ parseRollSave = function (r) {
+  const direct = parse0(r);
+  if (direct) return direct;
+  if (r === null || typeof r !== 'object' || Array.isArray(r) || !Array.isArray(r.notes)) return null;
+  // Copie réparée (l'objet lu n'est pas modifié).
+  const copy = { ...r, notes: r.notes.map(n => (n && typeof n === 'object' && !Array.isArray(n)) ? { ...n } : n) };
+  const fixed = fixList(copy.notes);
+  const again = parse0(copy);
+  if (again) { stats.repaired += fixed; clearTimeout(pendingMsg); pendingMsg = setTimeout(tell, 0); return again; }
+  // Encore refusé : on garde chaque note lisible, on ignore les autres (seulement si le pattern lui-même est valable).
+  if (!parse0({ ...copy, notes: [] })) return null;
+  const keep = copy.notes.filter(n => parse0({ ...copy, notes: [n] }));
+  const res = parse0({ ...copy, notes: keep });
+  if (!res) return null;
+  stats.repaired += fixed; stats.dropped += copy.notes.length - keep.length;
+  clearTimeout(pendingMsg); pendingMsg = setTimeout(tell, 0);
+  return res;
+ };
+
+ // 2. Après chaque édition du Piano Roll (souris, outils, copier/coller, édition fine) : notes ramenées dans les limites.
+ const changed0 = rollChanged;
+ rollChanged = function () { if (fixList(roll.notes)) stats.edits++; return changed0.apply(this, arguments); };
+
+ // 3. Outils de notes (déplacer, coller, dupliquer…) : même règle sur leur résultat, avant qu'il soit appliqué.
+ const wrapTools = () => {
+  const T = window.JACK22_NOTE_TOOLS; if (!T || T.c137) return !!T;
+  for (const k of ['transform', 'paste']) { const f = T[k]; if (typeof f === 'function') T[k] = function () { const r = f.apply(this, arguments); if (r && r.ok && Array.isArray(r.notes)) { r.notes = r.notes.map(n => ({ ...n })); fixList(r.notes); } return r; }; }
+  T.c137 = true; return true;
+ };
+ if (!wrapTools()) { const t = setInterval(() => { if (wrapTools()) clearInterval(t); }, 300); setTimeout(() => clearInterval(t), 30000); }
+
+ window.JACK22_NOTES137 = { version: '11.5-claude-6.7-notes-limites', fixNote, stats };
+})();</script>
+<style id="c138Style">
+/* 6.8 — Mission 0b : voyant de saturation du Master (thème noir et rouge inchangé). */
+#c138Sat{display:inline-flex;align-items:center;gap:6px;margin-left:10px;font:600 11px system-ui,"Segoe UI",sans-serif;color:#9aa1a9;white-space:nowrap}
+#c138Sat .c138Bar{position:relative;width:64px;height:8px;border-radius:4px;background:#22262b;border:1px solid #363b42;overflow:hidden}
+#c138Sat .c138Fill{position:absolute;left:0;top:0;bottom:0;width:0;background:#4caf6a;transition:width .08s linear}
+#c138Sat .c138Fill.hot{background:#e2b83c}
+#c138Sat .c138Chip{padding:2px 7px;border-radius:10px;border:1px solid #363b42;background:#22262b;color:#6b7178;letter-spacing:.04em}
+#c138Sat.on .c138Chip{background:#cf2f3b;border-color:#e0505a;color:#fff}
+</style>
+<script id="c138Script">(() => {
+ // Le Master passe par un limiteur doux : au-delà du plafond, il écrase le son (son « sale », qui déraille).
+ // Ce voyant mesure le signal juste avant ce limiteur, pendant la lecture, sans rien changer au son ni à l'export.
+ const $ = id => document.getElementById(id);
+ let an = null, buf = null, tapped = null, litUntil = 0, playOver = 0, playSamples = 0, playPeak = 0, wasPlaying = false;
+ const el = document.createElement('span'); el.id = 'c138Sat'; el.setAttribute('role', 'status');
+ el.title = 'Niveau du Master avant le limiteur. « SATURÉ » : le son dépasse et se déforme — baisse le volume Master ou celui des pistes.';
+ el.innerHTML = '<span class="c138Lbl">Master</span><span class="c138Bar" aria-hidden="true"><span class="c138Fill"></span></span><span class="c138Chip">SATURÉ</span>';
+ const place = () => { const bar = $('c119Bar'); if (!bar || el.isConnected) return !!bar; const pos = $('c119Pos'); (pos?.parentElement === bar ? pos : bar.firstElementChild)?.after(el); return true; };
+ const tap = () => {
+  try { if (typeof engine === 'undefined' || !engine || !engine.masterGain) return false; } catch (e) { return false; }
+  if (tapped === engine) return true;
+  an = engine.ctx.createAnalyser(); an.fftSize = 2048; buf = new Float32Array(an.fftSize);
+  engine.masterGain.connect(an); tapped = engine; return true;   // une sortie de plus vers un analyseur : le son n'est pas modifié
+ };
+ const playing = () => { try { return state === 'playing'; } catch (e) { return false; } };
+ const tick = () => {
+  place();
+  const p = playing();
+  if (p && tap()) {
+   an.getFloatTimeDomainData(buf); let pk = 0, over = 0;
+   for (let i = 0; i < buf.length; i++) { const a = Math.abs(buf[i]); if (a > pk) pk = a; if (a > 1) over++; }
+   playPeak = Math.max(playPeak, pk); playOver += over; playSamples += buf.length;
+   const f = el.querySelector('.c138Fill'); f.style.width = Math.min(100, pk * 100) + '%'; f.classList.toggle('hot', pk > 0.9);
+   if (pk > 1) litUntil = Date.now() + 2000;
+  } else el.querySelector('.c138Fill').style.width = '0';
+  const on = Date.now() < litUntil; el.classList.toggle('on', on); el.setAttribute('aria-label', on ? 'Master saturé' : 'Master : pas de saturation');
+  // Fin de lecture : un message si le son a saturé (pour savoir quoi baisser), sinon rien.
+  if (wasPlaying && !p && playSamples) {
+   if (playOver) { const pct = (100 * playOver / playSamples); const mv = $('master')?.value;
+    try { setStatus('⚠ Le Master a saturé pendant la lecture (crête ' + playPeak.toFixed(2) + ', ' + (pct < 0.01 ? '< 0,01' : pct.toFixed(2).replace('.', ',')) + ' % du temps) : baisse le volume Master' + (mv ? ' (' + mv + ' %)' : '') + ' ou celui des pistes les plus fortes.'); } catch (e) {} }
+   window.JACK22_SAT138.last = { peak: playPeak, pct: 100 * playOver / playSamples };
+   playOver = playSamples = playPeak = 0;
+  }
+  wasPlaying = p;
+ };
+ setInterval(tick, 100);
+ window.JACK22_SAT138 = { version: '11.5-claude-6.8-saturation', last: null, isOn: () => el.classList.contains('on'), el };
+})();</script>
+<style id="c139Style">
+/* 6.9 — M1 « Pistes audio en nombre » : les 32 pistes audio existantes (module j99) deviennent utilisables
+   directement depuis l'Arrangement. Thème noir et rouge inchangé. */
+#c139Tools{display:inline-flex;align-items:center;gap:6px;margin-left:6px}
+#c139Tools select{max-width:160px}
+#timeline .tl-row.c139Target>.tl-label{box-shadow:inset 0 0 0 2px #cf2f3b}
+</style>
+<script id="c139Script">(() => {
+ 'use strict';
+ // Couleurs proposées aux nouvelles pistes (lisibles sur le fond graphite).
+ const PALETTE = ['#4a90d9', '#e2b83c', '#9b6bd6', '#4caf6a', '#e2414c', '#3cc3c9', '#e07b39', '#d65fa6'];
+ const $ = id => document.getElementById(id), A = () => window.JACK22_AUDIO_EDIT;
+ let target = null;                       // piste audio choisie pour les imports (null = piste AUDIO)
+ const tracks = () => (A()?.settings?.tracks || []);
+ const say = t => { try { audioMsg(t); } catch (e) { try { setStatus(t); } catch (x) {} } };
+
+ const ui = document.createElement('span'); ui.id = 'c139Tools';
+ const add = document.createElement('button'); add.type = 'button'; add.textContent = '＋ Piste audio'; add.title = 'Ajouter une piste audio (32 au maximum)';
+ const dest = document.createElement('select'); dest.setAttribute('aria-label', 'Piste de destination des fichiers importés'); dest.title = 'Les fichiers importés arrivent sur cette piste';
+ ui.append(add, dest);
+
+ const fill = () => {
+  const list = tracks(), keep = target && list.some(t => t.id === target) ? target : null; target = keep;
+  dest.replaceChildren(...list.map(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = '→ ' + t.name; return o; }));
+  dest.value = target || (list[0]?.id ?? '');
+  add.disabled = list.length >= 32; add.title = list.length >= 32 ? 'Maximum 32 pistes audio atteint' : 'Ajouter une piste audio (' + list.length + ' sur 32)';
+  document.querySelectorAll('#timeline .tl-row.c139Target').forEach(r => r.classList.remove('c139Target'));
+  if (target) document.querySelector('#timeline [data-j99-lane="' + CSS.escape(target) + '"]')?.closest('.tl-row')?.classList.add('c139Target');
+ };
+ const placeUi = () => {
+  const imp = $('audioImport'); if (!imp || !A()) return false;
+  if (!ui.isConnected) imp.after(ui);
+  fill(); return true;
+ };
+
+ // Couleur réglée par la fenêtre normale de la piste (« Réglages de la piste audio » → Appliquer), puis refermée.
+ const setColor = (id, color) => {
+  try {
+   A().open(null, id); const d = $('j99Dialog'); if (!d) return false;
+   const inp = d.querySelector('input[type="color"]'), ok = [...d.querySelectorAll('button')].find(b => b.textContent.trim() === 'Appliquer la piste');
+   if (!inp || !ok) { d.close?.(); return false; }
+   inp.value = color; inp.dispatchEvent(new Event('input', { bubbles: true })); ok.click(); d.close?.(); return true;
+  } catch (e) { return false; }
+ };
+ add.onclick = () => {
+  try {
+   const n = tracks().length, name = 'Piste audio ' + (n - 3);           // les 4 premières : AUDIO, VOIX 1 à 3
+   A().addTrack(name);
+   const t = tracks().at(-1); target = t?.id || null;
+   // Couleur différente pour chaque nouvelle piste (réglage normal de la piste, enregistré avec le projet).
+   if (t) setColor(t.id, PALETTE[(n - 4 + PALETTE.length) % PALETTE.length]);
+   tlBuild(); fill(); say('« ' + name + ' » créée (' + tracks().length + ' pistes audio sur 32). Les fichiers importés arriveront dessus.');
+  } catch (e) { say(e.message); }
+ };
+ dest.onchange = () => { target = dest.value === 'audio' ? null : dest.value; fill(); };
+
+ // Import : le fichier arrive sur la piste choisie (déplacement normal, annulable, sans toucher au fichier).
+ const imp0 = audioImportFile;
+ audioImportFile = async function (file, attach) {
+  const before = new Set(audioClips.map(c => c.id)), r = await imp0.apply(this, arguments);
+  if (!attach && target) {
+   const c = audioClips.find(x => !before.has(x.id));
+   if (c) try { A().place(c.id, A().seconds(c), target); tlBuild(); say('« ' + c.name + ' » importé sur ' + (tracks().find(t => t.id === target)?.name || 'la piste') + '.'); } catch (e) { say('Import fait sur AUDIO (déplacement impossible : ' + e.message + ').'); }
+  }
+  return r;
+ };
+
+ // Arrangement reconstruit : outils remis en place et piste cible surlignée.
+ const build0 = tlBuild; tlBuild = function () { const r = build0.apply(this, arguments); try { placeUi(); } catch (e) {} return r; };
+ if (!placeUi()) { const t = setInterval(() => { if (placeUi()) clearInterval(t); }, 300); setTimeout(() => clearInterval(t), 30000); }
+ window.JACK22_TRACKS139 = { version: '11.5-claude-6.9-pistes-audio', get target() { return target; }, set target(v) { target = v; fill(); }, tracks };
+})();</script>
+<style id="c140Style">
+/* 7.0 — M2 « Gestes de montage » : barre d'outils de clip dans l'Arrangement. Thème noir et rouge inchangé. */
+#c140Clip{display:inline-flex;align-items:center;gap:5px;margin-left:8px;flex-wrap:wrap}
+#c140Clip .c140Gain{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#9aa1a9}
+#c140Clip .c140Gain input{width:90px}
+#c140Clip button[aria-pressed="false"].c140Snap{opacity:.7}
+#timeline .tl-aud .c140Badge{position:absolute;right:4px;top:2px;font-size:10px;padding:0 4px;border-radius:3px;background:#111316cc;color:#e7e8ea;pointer-events:none}
+</style>
+<script id="c140Script">(() => {
+ 'use strict';
+ const $ = id => document.getElementById(id), A = () => window.JACK22_AUDIO_EDIT;
+ const say = t => { try { audioMsg(t); } catch (e) { try { setStatus(t); } catch (x) {} } };
+ let gains = {};                                   // gain par clip, en dB (absent = 0 dB : rien ne change)
+ let clipboard = [];                               // [{id, rel, lane}] : copie (les sources ne sont jamais modifiées)
+ let snap = true; try { snap = localStorage.getItem('jack22.snap140') !== 'off'; } catch (e) {}
+ const sel = () => { try { return A()?.selection || []; } catch (e) { return []; } };
+ const remember = () => { try { window.Jack22Vision8?.remember(); } catch (e) {} };
+ const busy = () => { try { return state !== 'stopped' || persistBusy || window.Jack22Lot3?.pending; } catch (e) { return false; } };
+ // Position de la tête de lecture (barre du bas « mesure.temps.pas.ms »), en secondes.
+ const headSec = () => { const t = $('c119Pos')?.textContent || ''; const m = t.match(/(\d+)\.(\d+)\.(\d+)\.(\d+)/); if (!m) return 0; const step = (m[1] - 1) * 16 + (m[2] - 1) * 4 + (m[3] - 1); return step * stepSec() + m[4] / 1000; };
+
+ // ---- Gain du clip : appliqué par la même enveloppe que les fondus, en lecture ET dans le WAV ----
+ const edit0 = window.J22ClipEdit;
+ window.J22ClipEdit = c => { const ed = edit0(c); const db = gains[c?.id]; if (ed && db) ed.gain = Math.pow(10, db / 20); return ed; };
+ const env0 = window.J22Env;
+ window.J22Env = (p, when, offset, ed) => {
+  const g = ed && ed.gain; if (!g || g === 1) return env0(p, when, offset, ed);
+  const q = { setValueAtTime: (v, t) => p.setValueAtTime(v * g, t), linearRampToValueAtTime: (v, t) => p.linearRampToValueAtTime(v * g, t) };
+  return env0(q, when, offset, ed);
+ };
+ // Sauvegarde : les gains voyagent avec le projet (ancien projet sans gains = tout à 0 dB).
+ const check = v => { if (v === undefined || v === null) return {}; if (typeof v !== 'object' || Array.isArray(v)) throw Error('Gains de clips invalides.'); const out = {}; for (const [k, d] of Object.entries(v)) { if (!Number.isFinite(d) || d < -24 || d > 12) throw Error('Gain de clip invalide.'); if (d) out[k] = Math.round(d * 10) / 10; } return out; };
+ const cap = VoiceStore.capture, parse = VoiceStore.parse, set = VoiceStore.setText;
+ VoiceStore.capture = function () { return { ...cap.call(this), gains140: { ...gains } }; };
+ VoiceStore.parse = function (v) { const r = parse.call(this, v); if (!r) return r; try { return { ...r, gains140: check(v && v.gains140) }; } catch (e) { return false; } };
+ VoiceStore.setText = function (v) { const next = check(v && v.gains140); const r = set.call(this, v); gains = next; return r; };
+
+ // ---- Aimantation : désactivée = comme si Alt était tenu pendant le glisser (réglage existant) ----
+ const free = e => { if (!snap && e.target?.closest?.('#timeline .tl-aud')) try { Object.defineProperty(e, 'altKey', { get: () => true }); } catch (x) {} };
+ ['pointerdown', 'pointermove', 'pointerup'].forEach(t => document.addEventListener(t, free, true));
+
+ // ---- Barre d'outils ----
+ const bar = document.createElement('span'); bar.id = 'c140Clip'; bar.setAttribute('role', 'toolbar'); bar.setAttribute('aria-label', 'Outils du clip audio');
+ const btn = (txt, title, fn) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = txt; b.title = title; b.onclick = fn; bar.append(b); return b; };
+ const bCopy = btn('Copier', 'Copier le ou les clips sélectionnés (Ctrl+C)', () => copy());
+ const bPaste = btn('Coller', 'Coller à la tête de lecture, sur la piste de destination (Ctrl+V)', () => paste());
+ const bCut = btn('Couper', 'Couper le clip en deux à la tête de lecture (S)', () => cut());
+ const bDup = btn('Dupliquer', 'Dupliquer le clip juste après lui', () => dup());
+ const bXf = btn('Fondu croisé →', 'Fondu croisé avec le clip suivant de la même piste (ils doivent se chevaucher)', () => xfade());
+ const gl = document.createElement('label'); gl.className = 'c140Gain'; gl.textContent = 'Gain ';
+ const gIn = document.createElement('input'); gIn.type = 'range'; gIn.min = '-24'; gIn.max = '12'; gIn.step = '0.5'; gIn.value = '0'; gIn.setAttribute('aria-label', 'Gain du clip (dB)');
+ const gOut = document.createElement('span'); gOut.textContent = '0 dB'; gl.append(gIn, gOut); bar.append(gl);
+ const bSnap = btn('⌗ Aimantation', 'Aimantation à la grille (désactivée : placement libre, comme Alt)', () => { snap = !snap; try { localStorage.setItem('jack22.snap140', snap ? 'on' : 'off'); } catch (e) {} refresh(); say(snap ? 'Aimantation activée : les clips se calent sur la grille.' : 'Aimantation désactivée : placement libre.'); });
+ bSnap.classList.add('c140Snap');
+
+ const refresh = () => {
+  const s = sel(), one = s.length === 1;
+  bCopy.disabled = !s.length; bPaste.disabled = !clipboard.length; bCut.disabled = !one; bDup.disabled = !one; bXf.disabled = !one; gIn.disabled = !s.length;
+  const db = one ? (gains[s[0]] || 0) : 0; gIn.value = String(db); gOut.textContent = (db > 0 ? '+' : '') + db + ' dB';
+  bSnap.setAttribute('aria-pressed', String(snap));
+  document.querySelectorAll('#timeline .tl-aud[data-audio]').forEach(el => { const id = Number(el.dataset.audio), d = gains[id]; let b = el.querySelector('.c140Badge'); if (d) { if (!b) { b = document.createElement('span'); b.className = 'c140Badge'; el.append(b); } b.textContent = (d > 0 ? '+' : '') + d + ' dB'; } else b?.remove(); });
+ };
+ const guard = () => { if (busy()) { say('Arrête la lecture ou attends la fin de l’opération en cours.'); return false; } return true; };
+ function copy() { const s = sel(); if (!s.length) return false; const items = s.map(id => ({ id, at: A().seconds(audioClips.find(c => c.id === id)), lane: A().lane(id) })); const t0 = Math.min(...items.map(i => i.at)); clipboard = items.map(i => ({ id: i.id, rel: i.at - t0, lane: i.lane })); refresh(); say(clipboard.length + ' clip(s) copié(s). « Coller » les pose à la tête de lecture.'); return true; }
+ async function paste() {
+  if (!clipboard.length || !guard()) return false;
+  const at = headSec(), dest = window.JACK22_TRACKS139?.target || null, made = []; remember();
+  try {
+   for (const it of clipboard) {
+    if (!audioClips.some(c => c.id === it.id)) continue;
+    const before = new Set(audioClips.map(c => c.id)); await A().duplicate(it.id);
+    const n = audioClips.find(c => !before.has(c.id)); if (!n) continue;
+    A().place(n.id, Math.max(0, at + it.rel), dest || it.lane); if (gains[it.id]) gains[n.id] = gains[it.id]; made.push(n.id);
+   }
+  } catch (e) { say('Collage incomplet : ' + e.message); }
+  if (made.length) { A().select(made); say(made.length + ' clip(s) collé(s) à ' + at.toFixed(2) + ' s' + (dest ? ' sur la piste de destination' : '') + '. Les fichiers d’origine ne changent pas.'); }
+  tlBuild(); return made.length > 0;
+ }
+ async function cut() { const s = sel(); if (s.length !== 1 || !guard()) return; try { await A().splitAt(s[0], headSec()); say('Clip coupé en deux à la tête de lecture, sans toucher au fichier.'); } catch (e) { say(e.message); } tlBuild(); }
+ async function dup() { const s = sel(); if (s.length !== 1 || !guard()) return; try { await A().duplicate(s[0]); say('Copie créée juste après le clip.'); } catch (e) { say(e.message); } tlBuild(); }
+ async function xfade() {
+  const s = sel(); if (s.length !== 1 || !guard()) return; const c = audioClips.find(x => x.id === s[0]); if (!c) return;
+  const lane = A().lane(c.id), t = A().seconds(c), next = audioClips.filter(o => o.id !== c.id && !o.missing && A().lane(o.id) === lane && A().seconds(o) > t).sort((a, b) => A().seconds(a) - A().seconds(b))[0];
+  if (!next) { say('Pas de clip après celui-ci sur la même piste.'); return; }
+  try { await A().crossfade(c.id, next.id); say('Fondu croisé créé. Les deux sources restent conservées.'); } catch (e) { say('Fondu croisé impossible : ' + e.message); } tlBuild();
+ }
+ gIn.oninput = () => { const v = Number(gIn.value); gOut.textContent = (v > 0 ? '+' : '') + v + ' dB'; };
+ gIn.onchange = () => { const s = sel(); if (!s.length) return; if (busy()) { say('Arrête la lecture pour régler le gain.'); refresh(); return; } remember(); const v = Number(gIn.value); for (const id of s) { if (v) gains[id] = v; else delete gains[id]; } tlBuild(); say('Gain de ' + s.length + ' clip(s) : ' + (v > 0 ? '+' : '') + v + ' dB (lecture et WAV).'); };
+ document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey || /input|textarea|select/i.test(e.target?.tagName || '') || e.target?.isContentEditable) return;
+  if (!$('timeline')?.offsetWidth) return;
+  if ((e.key === 'c' || e.key === 'C') && sel().length) { e.preventDefault(); copy(); }
+  else if ((e.key === 'v' || e.key === 'V') && clipboard.length) { e.preventDefault(); paste(); }
+ });
+ const placeUi = () => { const anchor = $('c139Tools') || $('audioImport'); if (!anchor || !A()) return false; if (!bar.isConnected) anchor.after(bar); refresh(); return true; };
+ const build0 = tlBuild; tlBuild = function () { const r = build0.apply(this, arguments); try { placeUi(); } catch (e) {} return r; };
+ document.addEventListener('pointerup', () => setTimeout(refresh, 30), true);
+ if (!placeUi()) { const t = setInterval(() => { if (placeUi()) clearInterval(t); }, 300); setTimeout(() => clearInterval(t), 30000); }
+ window.JACK22_EDIT140 = { version: '11.5-claude-7.0-gestes-montage', get gains() { return { ...gains }; }, setGain: (id, db) => { if (db) gains[id] = db; else delete gains[id]; tlBuild(); }, copy, paste, cut, dup, xfade, get snap() { return snap; }, set snap(v) { snap = !!v; refresh(); }, headSec };
 })();</script>
