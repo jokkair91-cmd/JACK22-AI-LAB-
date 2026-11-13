@@ -1,0 +1,31 @@
+{
+    "conditions":  {
+                       "navigateur":  "Microsoft Edge sans fenÃªtre (headless)",
+                       "page_cachee":  false,
+                       "visibilite":  "visible",
+                       "taille":  "1670x1005",
+                       "url":  "http://localhost:8731/f6/harness.html"
+                   },
+    "resultat":  {
+                     "7.8":  {
+                                 "cachee":  false,
+                                 "visibilite":  "visible",
+                                 "focus":  false,
+                                 "res":  [
+                                             "30 true Afrobeats : batterie, basse 808, guitare, 104 BPM ; guitare audible (RMS 0.0795 → 0.0881) ; Annuler/Rétablir OK ; Hardy Bay : égaliseurs posés dans les racks, effet perso",
+                                             "32 null pas de choix de prise dans cette version",
+                                             "44 true « Piste audio 1 » créée en un clic, couleur #4a90d9, visible | « test-m1.wav » (1,5 s) arrivé sur la piste choisie, avec sa | 32 pistes audio : 29 lignes à l’écran (les v"
+                                         ]
+                             },
+                     "7.9":  {
+                                 "cachee":  false,
+                                 "visibilite":  "visible",
+                                 "focus":  false,
+                                 "res":  [
+                                             "30 true Afrobeats : batterie, basse 808, guitare, 104 BPM ; guitare audible (RMS 0.0795 → 0.0881) ; Annuler/Rétablir OK ; Hardy Bay : égaliseurs posés dans les racks, effet perso",
+                                             "32 null pas de choix de prise dans cette version",
+                                             "44 true « Piste audio 1 » créée en un clic, couleur #4a90d9, visible | « test-m1.wav » (1,5 s) arrivé sur la piste choisie, avec sa | 32 pistes audio : 29 lignes à l’écran (les v"
+                                         ]
+                             }
+                 }
+}

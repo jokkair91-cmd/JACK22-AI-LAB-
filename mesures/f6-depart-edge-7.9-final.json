@@ -1,0 +1,83 @@
+{
+    "conditions":  {
+                       "navigateur":  "Microsoft Edge sans fenÃªtre (headless)",
+                       "page_cachee":  false,
+                       "visibilite":  "visible",
+                       "taille":  "1506x769",
+                       "url":  "http://localhost:8731/dist-7.9/JACK22-STUDIO-11.5-CLAUDE-7-9-MUTE-MIDI.html"
+                   },
+    "resultat":  {
+                     "conditions":  {
+                                        "page_cachee":  false,
+                                        "visibilite":  "visible",
+                                        "contexte_audio":  "running",
+                                        "latence_sortie_ms":  40,
+                                        "latence_base_ms":  10
+                                    },
+                     "mesures":  [
+                                     {
+                                         "lecture":  "1re lecture après l’ouverture",
+                                         "pas0_apres_clic_ms":  50,
+                                         "premiers_sons":  {
+                                                               "808":  {
+                                                                           "depart_vs_pas0_ms":  0,
+                                                                           "retard_ms":  0
+                                                                       },
+                                                               "batterie":  {
+                                                                                "depart_vs_pas0_ms":  0,
+                                                                                "retard_ms":  0
+                                                                            },
+                                                               "wav":  {
+                                                                           "depart_vs_pas0_ms":  0,
+                                                                           "retard_ms":  0
+                                                                       }
+                                                           },
+                                         "sons_programmes":  14,
+                                         "en_retard":  0,
+                                         "clic_ms":  1624
+                                     },
+                                     {
+                                         "lecture":  "2e lecture",
+                                         "pas0_apres_clic_ms":  50,
+                                         "premiers_sons":  {
+                                                               "808":  {
+                                                                           "depart_vs_pas0_ms":  0,
+                                                                           "retard_ms":  0
+                                                                       },
+                                                               "batterie":  {
+                                                                                "depart_vs_pas0_ms":  0,
+                                                                                "retard_ms":  0
+                                                                            },
+                                                               "wav":  {
+                                                                           "depart_vs_pas0_ms":  0,
+                                                                           "retard_ms":  0
+                                                                       }
+                                                           },
+                                         "sons_programmes":  14,
+                                         "en_retard":  0,
+                                         "clic_ms":  1613
+                                     },
+                                     {
+                                         "lecture":  "3e lecture",
+                                         "pas0_apres_clic_ms":  50,
+                                         "premiers_sons":  {
+                                                               "808":  {
+                                                                           "depart_vs_pas0_ms":  0,
+                                                                           "retard_ms":  0
+                                                                       },
+                                                               "batterie":  {
+                                                                                "depart_vs_pas0_ms":  0,
+                                                                                "retard_ms":  0
+                                                                            },
+                                                               "wav":  {
+                                                                           "depart_vs_pas0_ms":  0,
+                                                                           "retard_ms":  0
+                                                                       }
+                                                           },
+                                         "sons_programmes":  14,
+                                         "en_retard":  0,
+                                         "clic_ms":  1614
+                                     }
+                                 ]
+                 }
+}

@@ -1,0 +1,7 @@
+﻿<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:#000}iframe{border:0;width:100vw;height:100vh;display:block}</style>
+<iframe id="f"></iframe><script>
+const q=new URLSearchParams(location.search),f=document.getElementById('f');f.src=q.get('url');
+f.onload=()=>setTimeout(()=>{const W=f.contentWindow;try{W.localStorage.setItem('jack22.pianoRoll.grand','0')}catch(e){}
+ try{W.JACK22_WORKSPACE.choose(q.get('g')||'compose',q.get('v')||'roll')}catch(e){}
+ setTimeout(()=>{ if(q.get('big')==='1') W.document.getElementById('c119Big')?.click(); if(q.get('js')) W.eval(q.get('js')); },800);},2500);
+</script>

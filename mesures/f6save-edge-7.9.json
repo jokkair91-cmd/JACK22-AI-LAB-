@@ -1,0 +1,32 @@
+{
+    "conditions":  {
+                       "navigateur":  "Microsoft Edge sans fenÃªtre (headless)",
+                       "page_cachee":  false,
+                       "visibilite":  "visible",
+                       "taille":  "1506x769",
+                       "url":  "http://localhost:8731/dist-7.9/JACK22-STUDIO-11.5-CLAUDE-7-9-MUTE-MIDI.html"
+                   },
+    "resultat":  {
+                     "apres":  {
+                                   "melody":  true,
+                                   "inst":  true,
+                                   "take":  true,
+                                   "audio":  true,
+                                   "voice":  true,
+                                   "harm":  "73",
+                                   "harmPanel":  "73",
+                                   "takeMuted":  true
+                               },
+                     "son_coupe_en_pourcent_du_son_reactive":  {
+                                                                   "melodie":  0,
+                                                                   "instrument":  0,
+                                                                   "prise":  0,
+                                                                   "wav":  0,
+                                                                   "voix":  10,
+                                                                   "voix_sans_808_ni_batterie":  0,
+                                                                   "basse":  100,
+                                                                   "batterie":  100
+                                                               },
+                     "statut":  "Projet restauré (2 fichiers audio), prise et effets"
+                 }
+}

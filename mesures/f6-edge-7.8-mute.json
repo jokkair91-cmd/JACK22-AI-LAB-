@@ -1,0 +1,29 @@
+{
+    "conditions":  {
+                       "navigateur":  "Microsoft Edge sans fenÃªtre (headless)",
+                       "page_cachee":  false,
+                       "visibilite":  "visible",
+                       "taille":  "1506x769",
+                       "url":  "http://localhost:8731/dist-7.8/JACK22-STUDIO-11.5-CLAUDE-7-8-CLAVIER.html"
+                   },
+    "resultat":  [
+                     {
+                         "ok":  false,
+                         "cas":  "Mute Mélodie pendant la lecture : la basse et le transport continuent",
+                         "detail":  "le Mute Mélodie coupe aussi la basse/808 : 1 voix de basse arrêtée(s)",
+                         "ms":  2113
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Réactivation de la Mélodie : notes suivantes à leur place, rien de rejoué",
+                         "detail":  "3 note(s) de mélodie après la réactivation, toutes à leur pas (tous les 4 pas), aucune avant",
+                         "ms":  1666
+                     },
+                     {
+                         "ok":  false,
+                         "cas":  "Mute Basse/808 pendant la lecture : la mélodie continue",
+                         "detail":  "le Mute Basse coupe aussi la mélodie : 1 voix arrêtée(s)",
+                         "ms":  2137
+                     }
+                 ]
+}

@@ -1,0 +1,20 @@
+{
+    "conditions":  {
+                       "navigateur":  "Microsoft Edge sans fenÃªtre (headless)",
+                       "page_cachee":  false,
+                       "visibilite":  "visible",
+                       "taille":  "1670x1005",
+                       "url":  "http://localhost:8731/f6/harness.html"
+                   },
+    "resultat":  {
+                     "911x700":  "OK 911 px : grille 300 → 332 px clavier replié, revenue à 300 ; libellé immédiat",
+                     "930x700":  "OK 930 px : grille 300 → 332 px clavier replié, revenue à 300 ; libellé immédiat",
+                     "930x1000":  "OK 930 px : grille 300 → 632 px clavier replié, revenue à 300 ; libellé immédiat",
+                     "940x800":  "OK 940 px : grille 300 → 432 px clavier replié, revenue à 300 ; libellé immédiat",
+                     "950x800":  "OK 950 px : grille 334 → 466 px clavier replié, revenue à 334 ; libellé immédiat",
+                     "960x800":  "OK 960 px : grille 333 → 475 px clavier replié, revenue à 333 ; libellé immédiat",
+                     "1024x768":  "OK 1024 px : grille 335 → 477 px clavier replié, revenue à 335 ; libellé immédiat",
+                     "1229x700":  "OK 1229 px : grille 341 → 447 px clavier replié, revenue à 341 ; libellé immédiat",
+                     "1536x864":  "OK 1536 px : grille 505 → 611 px clavier replié, revenue à 505 ; libellé immédiat"
+                 }
+}

@@ -1,0 +1,136 @@
+Remplacements documentés de la 7.9 (audit « Mute, MIDI et démarrage audio »).
+Chaque ancien texte est trouvé une seule fois dans la 7.8 ; l'outil d'assemblage refuse sinon.
+Les fonctions window.J22… appelées ici sont définies par le bloc ajouté (c150) ; sans lui, le code se comporte comme avant.
+
+### 1. Mute d'une piste (panneau Patterns, relayé par les boutons M) : ne coupe que les notes de CETTE piste ; même état que le canal du mixeur
+<<<
+const mute = btn('Mute', () => { tr.mute = !tr.mute; if (tr.mute && ti > 0) killMelody(); buildPatternUI(); uiExp(); });
+===
+const mute = btn('Mute', () => { const was = tr.mute || !!(window.J22ChannelMuted && window.J22ChannelMuted(tr.key)); tr.mute = !was; if (window.J22SyncChannel) window.J22SyncChannel(tr.key, tr.mute); if (tr.mute && ti > 0) { if (window.J22KillTrack) window.J22KillTrack(tr.key); else killMelody(); } buildPatternUI(); uiExp(); if (window.J22MuteSync) window.J22MuteSync(); });
+>>>
+
+### 2. État affiché du Mute d'une piste : coupée dans l'arrangement OU dans le mixeur
+<<<
+mute.className = 'mute'; mute.dataset.trackKey = tr.key; mute.title = 'Mute · ' + tr.label; mute.setAttribute('aria-pressed', String(tr.mute)); mute.setAttribute('aria-label', (tr.mute ? 'Réactiver la piste ' : 'Couper la piste ') + tr.label);
+===
+const shownMute = tr.mute || !!(window.J22ChannelMuted && window.J22ChannelMuted(tr.key)); mute.className = 'mute'; mute.dataset.trackKey = tr.key; mute.title = 'Mute · ' + tr.label; mute.setAttribute('aria-pressed', String(shownMute)); mute.setAttribute('aria-label', (shownMute ? 'Réactiver la piste ' : 'Couper la piste ') + tr.label);
+>>>
+
+### 3. Bouton M d'une ligne de l'arrangement : prise synthé et pistes audio ont leur propre commande
+<<<
+if(slot)return original(slot,'mute');
+===
+{const hook=window.J22RowSource&&window.J22RowSource(row);if(hook)return hook;}if(slot)return original(slot,'mute');
+>>>
+
+### 4. Bouton M d'un instrument ajouté : relié à l'identifiant réel de sa piste (et plus seulement aux 3 pistes d'origine)
+<<<
+if(ti!==undefined)return document.querySelector('.mute[data-track-key="'+['drums','bass','melody'][Number(ti)]+'"]');
+===
+if(ti!==undefined)return document.querySelector('.mute[data-track-key="'+((typeof song!=='undefined'&&song.tracks[Number(ti)])||{}).key+'"]');
+>>>
+
+### 5. Synchronisation de l'état des boutons M (même règle que ci-dessus)
+<<<
+function rowSource(row){const lane=row.querySelector('.tl-lane'),name=row.querySelector('b')?.textContent||'',match=name.match(/^VOIX\s+(\d)/);if(match)return $('cVoice'+match[1])?.querySelector('[data-action="mute"]');if(lane?.dataset.ti!==undefined)return document.querySelector('.mute[data-track-key="'+['drums','bass','melody'][Number(lane.dataset.ti)]+'"]');return $('audioMute');}
+===
+function rowSource(row){{const hook=window.J22RowSource&&window.J22RowSource(row);if(hook)return hook;}const lane=row.querySelector('.tl-lane'),name=row.querySelector('b')?.textContent||'',match=name.match(/^VOIX\s+(\d)/);if(match)return $('cVoice'+match[1])?.querySelector('[data-action="mute"]');if(lane?.dataset.ti!==undefined)return document.querySelector('.mute[data-track-key="'+((typeof song!=='undefined'&&song.tracks[Number(lane.dataset.ti)])||{}).key+'"]');return $('audioMute');}
+>>>
+
+### 6. Prise synthé coupée : plus jouée pendant la lecture
+<<<
+if (take && $('recWith').checked) {
+===
+if (take && $('recWith').checked && !(window.J22TakeMuted && window.J22TakeMuted())) {
+>>>
+
+### 7. Prise synthé coupée : absente du WAV exporté (modes Pattern et Morceau)
+<<<
+take: take ? JSON.parse(JSON.stringify(take)) : null,
+===
+take: take && !(window.J22TakeMuted && window.J22TakeMuted()) ? JSON.parse(JSON.stringify(take)) : null,
+>>>
+
+### 8. Piste audio coupée (M de sa ligne) : effet immédiat sur les clips qui jouent déjà
+<<<
+const audioGain = () => audioMute ? 0 : volumeToGain(audioLevel);
+===
+const audioGain = c => (audioMute || (c && window.J22LaneMuted && window.J22LaneMuted(c))) ? 0 : volumeToGain(audioLevel);
+>>>
+
+### 9. (même chose au départ d'un clip)
+<<<
+g.gain.value = audioGain() * clipGainV(c);
+===
+g.gain.value = audioGain(c) * clipGainV(c);
+>>>
+
+### 10. (même chose pendant la lecture)
+<<<
+a.g.gain.setTargetAtTime(audioGain() * clipGainV(a.c), audio.currentTime, 0.015)
+===
+a.g.gain.setTargetAtTime(audioGain(a.c) * clipGainV(a.c), audio.currentTime, 0.015)
+>>>
+
+### 11. Pistes audio : Mute / Solo réglables depuis l'arrangement, aussi pendant la lecture (simple interrupteur : rien d'autre ne change)
+<<<
+,open,validate,get settings(){return copy(settings)}};
+===
+,open,validate,setTrack:(id,props)=>{const t=settings.tracks.find(x=>x.id===id);if(!t)throw Error('Piste introuvable.');for(const k of ['mute','solo'])if(props&&k in props)t[k]=!!props[k];try{tlBuild();}catch(e){}return true;},get settings(){return copy(settings)}};
+>>>
+
+### 12. MIDI : un relâchement est toujours traité (même fenêtre ouverte) ; chaque entrée MIDI a ses propres notes (deux claviers)
+<<<
+function receiveMIDI(e){const [status,note,vel]=e.data,on=(status&240)===144&&vel>0,off=(status&240)===128||((status&240)===144&&!vel);if(!on&&!off)return;if(dlg.open&&!midiRecording)return;const source='midi97-'+(status&15)+'-'+note;
+===
+function receiveMIDI(e){const [status,note,vel]=e.data,on=(status&240)===144&&vel>0,off=(status&240)===128||((status&240)===144&&!vel);if(!on&&!off)return;if(on&&dlg.open&&!midiRecording)return;const port=String((e.target&&e.target.id)||(e.currentTarget&&e.currentTarget.id)||'').replace(/[^A-Za-z0-9_.:-]/g,'_'),source='midi97-'+port+'-'+(status&15)+'-'+note;
+>>>
+
+### 13. MIDI : libérer les notes d'un clavier débranché
+<<<
+async function connectMIDI(){
+===
+function releaseInput(id){const key=String(id||'').replace(/[^A-Za-z0-9_.:-]/g,'_');let n=0;for(const [k,v] of [...midiHeld]){if(k.startsWith('midi97-'+key+'-')){midiHeld.delete(k);if(!midiRecording&&v&&v.state&&engine)engine.releaseVoice(v);n++;}}return n;}async function connectMIDI(){
+>>>
+
+### 14. (appel quand un clavier MIDI se débranche)
+<<<
+midiAccess.onstatechange=attach;
+===
+midiAccess.onstatechange=e=>{attach();const p=e&&e.port;if(p&&p.type==='input'&&p.state==='disconnected')releaseInput(p.id);};
+>>>
+
+### 15. Mixeur de la Production : Mute d'un canal réglable par l'arrangement ; relâchement MIDI par entrée
+<<<
+get config(){return copy(config)},stems,newAudio,receiveMIDI};
+===
+get config(){return copy(config)},stems,newAudio,receiveMIDI,releaseInput,setChannelMute:(k,on)=>{const c=config.mix[k];if(!c)return false;c.mute=!!on;return true;}};
+>>>
+
+### 16. Mixeur de la Production : la case « Muet » affiche aussi le Mute de l'arrangement
+<<<
+mute.checked=c.mute;solo.checked=c.solo;comp.checked=c.comp;
+===
+mute.checked=c.mute||!!(window.J22ShowTrackMute&&window.J22ShowTrackMute(tr));solo.checked=c.solo;comp.checked=c.comp;
+>>>
+
+### 17. Mixeur de la Production : « Appliquer » règle aussi le Mute de l'arrangement (un seul état par piste)
+<<<
+config=validate(next);say('Canal enregistré : prochaine lecture et export.');
+===
+config=validate(next);if(window.J22SetTrackMute)window.J22SetTrackMute(tr.key,mute.checked);say('Canal enregistré : prochaine lecture et export.');
+>>>
+
+### 18. Couleurs des touches (bloc c149 de la 7.8) : jamais deux fois de suite la même couleur sur une touche
+<<<
+const pick = () => { n++; const h = Math.floor(Math.random() * 360); return 'hsl(' + h + ' 90% 60%)'; };
+===
+const pick = k => { n++; const last = k && k.dataset.c149h !== undefined ? Number(k.dataset.c149h) : NaN; let h = 0, tries = 0; do { h = Math.floor(Math.random() * 360); tries++; } while (Number.isFinite(last) && Math.min(Math.abs(h - last), 360 - Math.abs(h - last)) < 60 && tries < 50); if (k) k.dataset.c149h = String(h); return 'hsl(' + h + ' 90% 60%)'; };
+>>>
+
+### 19. (la touche est passée au tirage)
+<<<
+if (!k.dataset.c149) k.dataset.c149 = pick();
+===
+if (!k.dataset.c149) k.dataset.c149 = pick(k);
+>>>

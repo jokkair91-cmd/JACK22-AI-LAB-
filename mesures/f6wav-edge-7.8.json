@@ -1,0 +1,29 @@
+{
+    "conditions":  {
+                       "navigateur":  "Microsoft Edge sans fenÃªtre (headless)",
+                       "page_cachee":  false,
+                       "visibilite":  "visible",
+                       "taille":  "1506x769",
+                       "url":  "http://localhost:8731/dist-7.8/JACK22-STUDIO-11.5-CLAUDE-7-8-CLAVIER.html"
+                   },
+    "resultat":  [
+                     {
+                         "cas":  "Rendu WAV, mode Pattern : chaque M retire sa source, et seulement elle",
+                         "ok":  false,
+                         "detail":  "drums coupé → reste 0 % | bass coupé → reste 0 % | melody coupé → reste 0 % | inst : commande M inactive pour « inst » | take : aucune commande M pour « take » | voice coupé → reste 1 % | wav coupé → reste 0 % ; perdu aussi : voice 1 %",
+                         "ms":  16023
+                     },
+                     {
+                         "cas":  "Rendu WAV, mode Morceau : chaque M retire sa source, et seulement elle",
+                         "ok":  false,
+                         "detail":  "drums coupé → reste 0 % | bass coupé → reste 0 % | melody coupé → reste 0 % | inst : commande M inactive pour « inst » | take : aucune commande M pour « take » | voice coupé → reste 1 % | wav coupé → reste 0 % ; perdu aussi : voice 1 %",
+                         "ms":  14960
+                     },
+                     {
+                         "cas":  "Rendu WAV : Mute + Solo",
+                         "ok":  true,
+                         "detail":  "Solo Basse → basse 100 %, mélodie 0 %, batterie 0 % ; + Mute Basse → basse 0 % ; + Mute Mélodie → basse 100 %, mélodie 0 %",
+                         "ms":  8658
+                     }
+                 ]
+}

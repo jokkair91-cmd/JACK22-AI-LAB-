@@ -1,0 +1,10 @@
+﻿<!doctype html><meta charset="utf-8"><title>Banc de test JACK22</title><body style="margin:0">
+<script>
+// Banc de test : charge une version dans un cadre de taille fixe et y lance la suite de Claude.
+window.frameAt=async(url,w,h)=>{const f=document.createElement('iframe');f.style.cssText=`width:${w}px;height:${h}px;border:0;display:block`;document.body.replaceChildren(f);f.src=url+(url.includes('?')?'&':'?')+'t='+Date.now();await new Promise(r=>f.onload=r);await new Promise(r=>setTimeout(r,2000));return f.contentWindow;};
+window.runIn=async(url,w,h,re)=>{const W=await frameAt(url,w,h);const s=await fetch('/f6/lot8-tests.js?'+Date.now()).then(r=>r.text());W.eval(s);window.__R=null;W.JACK22_LOT8_TESTS(re?new W.RegExp(re):undefined).then(r=>window.__R=r,e=>window.__R={err:String(e)});return W.innerWidth+'x'+W.innerHeight;};
+window.ALL={};window.runSizes=async(url,sizes,re)=>{ALL={};for(const [w,h] of sizes){await runIn(url,w,h,re);for(let i=0;i<300&&!window.__R;i++)await new Promise(r=>setTimeout(r,1000));const r=window.__R;ALL[w+'x'+h]=r?{p:r.passed,s:r.skipped,f:r.failed,res:r.results?.filter(x=>x.ok!==true).map(x=>x.test.slice(0,2)+' '+x.ok+' '+String(x.detail).slice(0,260)),all:r.results?.map(x=>x.test.slice(0,2)+' '+x.ok+' '+String(x.detail).slice(0,200)),err:r.err}:'timeout';}ALL.done=true;};
+</script></body>
+
+
+

@@ -1,0 +1,18 @@
+{
+  "conditions": {
+    "navigateur": "navigateur de test intégré à l’application Claude (Chromium)",
+    "taille": "1536x864",
+    "page_cachee": "oui au moment du test 32 (il le signale), non à la fin de la suite : le panneau a été affiché pendant l’exécution",
+    "version": "JACK22-STUDIO-11.5-CLAUDE-7-9-MUTE-MIDI.html, SHA-256 cec1447e92acc5012aa1b87139f22b75ac4830f281ffa817e6ffeadc891b2da6"
+  },
+  "resultat": {
+    "reussis": 40,
+    "non_applicables": 9,
+    "echecs": 1,
+    "echec": "32 les deux prises ne sont pas listées (prises calculées : 2, onglet : Lead=true/Doublage=false/Ad-libs=false, liste 622 px, page cachée)",
+    "test_12": "SHA-256 identique : 9b376bcb35892acf…",
+    "test_49": "15/15 cas réussis",
+    "test_50": "mode Pattern OK | mode Morceau OK | Mute + Solo OK",
+    "test_21": "aucune erreur pendant la suite"
+  }
+}

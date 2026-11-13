@@ -1,0 +1,101 @@
+{
+    "conditions":  {
+                       "navigateur":  "Microsoft Edge sans fenÃªtre (headless)",
+                       "page_cachee":  false,
+                       "visibilite":  "visible",
+                       "taille":  "1506x769",
+                       "url":  "http://localhost:8731/dist-7.9/JACK22-STUDIO-11.5-CLAUDE-7-9-MUTE-MIDI.html"
+                   },
+    "resultat":  [
+                     {
+                         "ok":  true,
+                         "cas":  "Mute Mélodie pendant la lecture : la basse et le transport continuent",
+                         "detail":  "Mute Mélodie : 0 voix de basse arrêtée (1/1 tenue(s) intacte(s)), 1 nouvelle(s) note(s) de basse, 0 de mélodie ; transport : pas 2 → 13"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Réactivation de la Mélodie : notes suivantes à leur place, rien de rejoué",
+                         "detail":  "3 note(s) de mélodie après la réactivation, toutes à leur pas (tous les 4 pas), aucune avant"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Mute Basse/808 pendant la lecture : la mélodie continue",
+                         "detail":  "Mute Basse : 0 voix de mélodie arrêtée, 3 note(s) de mélodie ensuite, 0 de basse"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Instrument ajouté : bouton M actif, relié à sa piste, même état partout",
+                         "detail":  "« Test Mute » (piste 4) : M actif ; coupé = arrangement, panneau Patterns et mixeur cochés ; second clic : réactivé"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Prise synthé : un M à elle, séparé de la Mélodie",
+                         "detail":  "Mute Mélodie : la prise continue (1 notes) ; M de la prise : prise arrêtée, mélodie intacte (2 notes)"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Voix et WAV importés : chacun son M",
+                         "detail":  "gains pendant la lecture : départ voix 0.64 / WAV 0.64 ; M AUDIO → 0.64 / 0.00 ; réactivé → 0.64 / 0.64 ; M VOIX → 0.00 / 0.64"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "MIDI : note relâchée pendant que « Production » est ouverte",
+                         "detail":  "note jouée, « Production » ouverte, touche relâchée : voix releasing (1 démarrée, 1 relâchée)"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "MIDI : deux claviers tiennent le même Do sur le même canal",
+                         "detail":  "A relâché → A releasing, B held ; puis B relâché → releasing"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "MIDI : un clavier débranché libère ses notes",
+                         "detail":  "clavier A débranché : 2 notes libérées ; la note du clavier B reste tenue, puis se relâche normalement"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "MIDI : la touche jouée s’allume et s’éteint",
+                         "detail":  "Ré joué en MIDI : touche allumée (hsl(115 90% 60%)), éteinte au relâchement"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Export MIDI : JACK22-pattern.mid de référence réexporté à l’identique",
+                         "detail":  "référence : 8 notes, 120 BPM, 480 ticks par noire ; réexport : 100 octets identiques"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Export MIDI : deux notes de même hauteur qui se chevauchent",
+                         "detail":  "règle d’export : la 1re note s’arrête quand la 2e commence (4 pas) ; la 2e garde ses 8 pas avec les deux règles de réimportation testées"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Grand Piano Roll : la grille récupère la place, libellé tout de suite",
+                         "detail":  "1506 px : grille 410 → 516 px clavier replié, revenue à 410 ; libellé immédiat"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Touches : jamais la même couleur deux fois de suite",
+                         "detail":  "40 frappes : jamais deux couleurs proches à la suite ; note jouée par la lecture : couleur au hasard, puis retour au vert"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Harmoniques du 808 dans « Synthé ▾ » ; un seul bouton rond",
+                         "detail":  "curseur 73 % → réglage du projet 73 % ; « Valeur par défaut » → 50 % ; son 808 : 1 seul bouton rond sur le clavier"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Rendu WAV, mode Pattern : chaque M retire sa source, et seulement elle",
+                         "detail":  "drums coupé → reste 0 % | bass coupé → reste 0 % | melody coupé → reste 0 % | inst coupé → reste 0 % | take coupé → reste 0 % | voice coupé → reste 1 % | wav coupé → reste 0 %"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Rendu WAV, mode Morceau : chaque M retire sa source, et seulement elle",
+                         "detail":  "drums coupé → reste 0 % | bass coupé → reste 0 % | melody coupé → reste 0 % | inst coupé → reste 0 % | take coupé → reste 0 % | voice coupé → reste 1 % | wav coupé → reste 0 %"
+                     },
+                     {
+                         "ok":  true,
+                         "cas":  "Rendu WAV : Mute + Solo",
+                         "detail":  "Solo Basse → basse 100 %, mélodie 0 %, batterie 0 % ; + Mute Basse → basse 0 % ; + Mute Mélodie → basse 100 %, mélodie 0 %"
+                     }
+                 ]
+}

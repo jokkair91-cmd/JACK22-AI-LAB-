@@ -1,4 +1,4 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="jack22-build" content="JACK22-11.5-CLAUDE-7.6"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JACK22 STUDIO - 11.5 + Claude (packs, afro, maquettes) - Patterns et prises voix</title><style>
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="jack22-build" content="JACK22-11.5-CLAUDE-7.9"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JACK22 STUDIO - 11.5 + Claude (packs, afro, maquettes) - Patterns et prises voix</title><style>
 :root{font-family:Inter,Arial,sans-serif;color:#f5f5f5;background:#101014}*{box-sizing:border-box}body{margin:0}.app{max-width:1100px;margin:auto;padding:28px}header{display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}h1{font-size:28px;letter-spacing:2px;margin:0}h1 span{color:#ff4545}.sub{color:#999;font-size:13px}button,input{font:inherit}button{cursor:pointer;border:0;border-radius:8px;padding:12px 17px;background:#292932;color:#fff}button:hover{filter:brightness(1.2)}button.primary{background:#e3313d;font-weight:700}.transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:28px 0;background:#1b1b22;padding:16px;border-radius:12px}input[type=number]{width:75px;background:#111116;border:1px solid #444;color:white;padding:10px;border-radius:7px}.panel{background:#1b1b22;padding:20px;border-radius:14px;overflow-x:auto}.legend{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;min-width:780px;margin-bottom:10px;color:#999;font-size:12px;text-align:center}.track{display:grid;grid-template-columns:105px repeat(16,minmax(32px,1fr));gap:7px;align-items:center;min-width:780px;margin-bottom:12px}.track-label{font-weight:700;font-size:13px}.step{aspect-ratio:1;border-radius:6px;background:#34343d;padding:0;border:1px solid #45454e}.step.active{background:#e3313d;border-color:#ff6c74}.step.playing{outline:3px solid #fff;outline-offset:1px}.step.beat{background:#454550}.step.beat.active{background:#f0444e}footer{color:#777;font-size:12px;margin-top:20px}.status{color:#bbb;font-size:13px}
 /* V1.1 : volume master (même style que le reste) */
 input[type=range]{width:120px;accent-color:#e3313d;cursor:pointer}.master-val{min-width:42px;color:#bbb;font-size:13px}
@@ -1113,8 +1113,8 @@ function buildPatternUI() {
     const cur = activePat(ti), wrap = document.createElement('div'); wrap.className = 'ptrack';
     const head = document.createElement('div'); head.className = 'ptrack-head';
     const h = document.createElement('h3'); h.textContent = tr.label;
-    const mute = btn('Mute', () => { tr.mute = !tr.mute; if (tr.mute && ti > 0) killMelody(); buildPatternUI(); uiExp(); });
-    mute.className = 'mute'; mute.dataset.trackKey = tr.key; mute.title = 'Mute · ' + tr.label; mute.setAttribute('aria-pressed', String(tr.mute)); mute.setAttribute('aria-label', (tr.mute ? 'Réactiver la piste ' : 'Couper la piste ') + tr.label);
+    const mute = btn('Mute', () => { const was = tr.mute || !!(window.J22ChannelMuted && window.J22ChannelMuted(tr.key)); tr.mute = !was; if (window.J22SyncChannel) window.J22SyncChannel(tr.key, tr.mute); if (tr.mute && ti > 0) { if (window.J22KillTrack) window.J22KillTrack(tr.key); else killMelody(); } buildPatternUI(); uiExp(); if (window.J22MuteSync) window.J22MuteSync(); });
+    const shownMute = tr.mute || !!(window.J22ChannelMuted && window.J22ChannelMuted(tr.key)); mute.className = 'mute'; mute.dataset.trackKey = tr.key; mute.title = 'Mute · ' + tr.label; mute.setAttribute('aria-pressed', String(shownMute)); mute.setAttribute('aria-label', (shownMute ? 'Réactiver la piste ' : 'Couper la piste ') + tr.label);
     const cnt = document.createElement('span'); cnt.className = 'pcount'; cnt.textContent = tr.patterns.length + ' / ' + MAX_PATTERNS + ' patterns';
     head.append(h, mute, cnt);
     const chips = document.createElement('div'); chips.className = 'pchips';
@@ -1199,7 +1199,7 @@ const stepSec = () => 60 / getBpm() / 4;
 const clipStartStep = c => window.JACK22_AUDIO_EDIT?window.JACK22_AUDIO_EDIT.startStep(c):c.startBar*16;
 const clipBars = c => (window.l3Duration ? window.l3Duration(c) : c.duration) / (stepSec() * 16);                 // longueur du fichier en mesures, au tempo actuel
 const audioEndStep = () => audioClips.filter(c => c.buffer).reduce((m, c) => Math.max(m, Math.ceil(clipStartStep(c) + (window.l3Duration ? window.l3Duration(c) : c.duration) / stepSec())), 0);
-const audioGain = () => audioMute ? 0 : volumeToGain(audioLevel);
+const audioGain = c => (audioMute || (c && window.J22LaneMuted && window.J22LaneMuted(c))) ? 0 : volumeToGain(audioLevel);
 function audioPeaks(buf, n) {
   const out = new Float32Array(n), chs = []; for (let c = 0; c < buf.numberOfChannels; c++) chs.push(buf.getChannelData(c));
   const seg = Math.max(1, Math.floor(buf.length / n)), stride = Math.max(1, Math.floor(seg / 64));
@@ -1241,7 +1241,7 @@ async function audioImportOne(file, attachId) {
 function audioStartClip(c, when, offset) {
   if (!audio || !bus || !c.buffer || offset >= (window.l3Duration ? window.l3Duration(c) : c.duration)) return;
   const src = audio.createBufferSource(), g = audio.createGain(), r = { src, g, c };
-  src.buffer = window.l3ReadBuffer ? window.l3ReadBuffer(c) : c.buffer; g.gain.value = audioGain() * clipGainV(c); const ed = window.J22ClipEdit ? window.J22ClipEdit(c) : null, env = audio.createGain(); src.connect(env); env.connect(g); r.env = env; if(c.voice){r.meter=audio.createAnalyser();r.meter.fftSize=1024;g.connect(r.meter);r.meter.connect(window.J97AudioNode?window.J97AudioNode(audio,c,bus):bus);}else g.connect(window.J97AudioNode?window.J97AudioNode(audio,c,bus):bus);
+  src.buffer = window.l3ReadBuffer ? window.l3ReadBuffer(c) : c.buffer; g.gain.value = audioGain(c) * clipGainV(c); const ed = window.J22ClipEdit ? window.J22ClipEdit(c) : null, env = audio.createGain(); src.connect(env); env.connect(g); r.env = env; if(c.voice){r.meter=audio.createAnalyser();r.meter.fftSize=1024;g.connect(r.meter);r.meter.connect(window.J97AudioNode?window.J97AudioNode(audio,c,bus):bus);}else g.connect(window.J97AudioNode?window.J97AudioNode(audio,c,bus):bus);
   audioPlaying.push(r);
   src.onended = () => { const i = audioPlaying.indexOf(r); if (i >= 0) audioPlaying.splice(i, 1); try { g.disconnect(); if(r.meter)r.meter.disconnect(); } catch (e) {} };
   if (ed) { window.J22Env(env.gain, when, offset, ed); src.start(when, ed.trimIn + Math.max(0, offset), Math.max(0.001, ed.len - Math.max(0, offset))); } else src.start(when, Math.max(0, offset));const boundary=window.J98Capture?.boundary(when);if(boundary!==null&&boundary!==undefined)src.stop(boundary);
@@ -1259,7 +1259,7 @@ function audioKill(only) {
     setTimeout(() => { try { a.g.disconnect(); if(a.meter)a.meter.disconnect(); } catch (e) {} }, 100);
   });
 }
-function audioApplyGain() { if (audio) audioPlaying.forEach(a => a.g.gain.setTargetAtTime(audioGain() * clipGainV(a.c), audio.currentTime, 0.015)); }
+function audioApplyGain() { if (audio) audioPlaying.forEach(a => a.g.gain.setTargetAtTime(audioGain(a.c) * clipGainV(a.c), audio.currentTime, 0.015)); }
 function audioSelUi() {                                               // renvoie true si un fichier audio est sélectionné (la barre de la timeline s'adapte)
   const c = tlSelAudio !== null ? audioClips.find(x => x.id === tlSelAudio) : null;
   if (!c) { tlSelAudio = null; return false; }
@@ -2726,7 +2726,7 @@ function recSchedule(abs, t, len) {
     if (abs < rec.steps) return;                                        // pendant la prise : on n'entend pas l'ancienne mélodie
     if (rec.endTime === null) { rec.endTime = t; takeProvisional(); }   // le 1er pas après la prise : on prépare déjà la lecture
   }
-  if (take && $('recWith').checked) {
+  if (take && $('recWith').checked && !(window.J22TakeMuted && window.J22TakeMuted())) {
     const skip = $('rollWith').checked ? (n => song.tracks.map((_,i)=>i).slice(1).some(ti => { const sg = segFor(ti, abs); return !!sg && !song.tracks[ti].mute && sg.p.notes.length > 0 && takeNoteIsDup(patKeys(sg.p), sg.p, n, abs - sg.off); })) : null;      // pas de doublon avec le Piano Roll
     melodyVoices.push(...scheduleTakeAtStep(engine, take, ((abs % take.steps) + take.steps) % take.steps, t, len, skip));
   }
@@ -2769,7 +2769,7 @@ function deleteTake() { recFinish(false); killMelody(); take = null; drawTake();
 
 /* Données prêtes pour l'export WAV (étape 5) : tout ce qu'il faut pour rejouer le morceau hors-ligne */
 function exportData() {
-  return { bpm: getBpm(), stepLen: 60 / getBpm() / 4, pattern: song.tracks[0].mute ? names.map(() => Array(STEPS).fill(false)) : activePat(0).grid.map(r => r.slice()), take: take ? JSON.parse(JSON.stringify(take)) : null,
+  return { bpm: getBpm(), stepLen: 60 / getBpm() / 4, pattern: song.tracks[0].mute ? names.map(() => Array(STEPS).fill(false)) : activePat(0).grid.map(r => r.slice()), take: take && !(window.J22TakeMuted && window.J22TakeMuted()) ? JSON.parse(JSON.stringify(take)) : null,
     rolls: song.tracks.map((_,i)=>i).slice(1).map(ti => { const p = activePat(ti); return { version: 1, trackKey:song.tracks[ti].key, bars: p.bars, steps: p.steps, bpm: null, notes: JSON.parse(JSON.stringify(p.notes)) }; }).filter((r, i) => r.notes.length && !song.tracks[i + 1].mute),
     trackKeys:song.tracks.map(t=>t.key), settings: currentSettings(), song: playMode === 'song' ? songExportData() : null, audio: audioExportData() };
 }
@@ -3591,7 +3591,7 @@ for(const b of document.querySelectorAll('[data-sample-note]'))b.onclick=()=>sam
 $8('v8SavePreset').onclick=()=>{try{const c=audioClips.find(c=>c.voice?.slot===Number($('l3Slot').value));if(!c)return message('Sélectionne une voix enregistrée.');const next=copy(state8);next.presets.push({name:$8('v8PresetName').value.trim(),settings:window.Jack22Lot3.settings(c)});state8=parse(next);syncPresets();later();message('Preset voix enregistré dans le projet.');}catch(e){message(e.message);}};
 function syncPresets(){const box=$8('v8Presets');box.replaceChildren();for(const p of state8.presets){const b=document.createElement('button');b.textContent=p.name;b.onclick=()=>{const c=audioClips.find(c=>c.voice?.slot===Number($('l3Slot').value));if(!c)return message('Choisis une voix dans les effets.');if(persistBusy||window.Jack22Voice.state.active)return;const checked=D.validate(p.settings);if(checked.edit.start+checked.edit.end>=c.duration-.05)return message('Ce preset découperait toute la prise : choisis une prise plus longue ou un autre preset.');c.voice.processing=checked;audioKill(c);window.Jack22Lot3.sync();window.Jack22Lot3.schedule();later();};box.append(b);}}
 function sync(){$8('v8Swing').value=state8.swing;$8('v8SwingValue').textContent=state8.swing+' %';$8('v8AutoOn').checked=state8.automation.on;$8('v8Curve').value=state8.automation.points.map(p=>p.bar+', '+p.level).join('\n');$8('v8LoopStatus').textContent=state8.loop.on?'Zone en boucle : mesures '+state8.loop.start+' à '+(state8.loop.end-1):'Boucle de zone arrêtée';syncSections();syncPresets();samplerOptions();syncHistory();}
-function diagnostics(){return {build:'JACK22-11.5-CLAUDE-7.6',time:new Date().toISOString(),available:{microAPI:!!navigator.mediaDevices?.getUserMedia,audioWorklet:typeof AudioWorkletNode!=='undefined',offlineRenderer:typeof OfflineAudioContext!=='undefined',storage:typeof indexedDB!=='undefined'},state:{clips:audioClips.length,voices:audioClips.filter(c=>c.voice).length,sourceSeconds:audioClips.reduce((n,c)=>n+c.duration,0),prepared:window.l3Ready(),dirty:ProjectPersistence.isDirty()},validation:{realBrowserTests:false,meaning:'Capacités détectées et état courant, pas une certification de fonctionnement.'}};}
+function diagnostics(){return {build:'JACK22-11.5-CLAUDE-7.9',time:new Date().toISOString(),available:{microAPI:!!navigator.mediaDevices?.getUserMedia,audioWorklet:typeof AudioWorkletNode!=='undefined',offlineRenderer:typeof OfflineAudioContext!=='undefined',storage:typeof indexedDB!=='undefined'},state:{clips:audioClips.length,voices:audioClips.filter(c=>c.voice).length,sourceSeconds:audioClips.reduce((n,c)=>n+c.duration,0),prepared:window.l3Ready(),dirty:ProjectPersistence.isDirty()},validation:{realBrowserTests:false,meaning:'Capacités détectées et état courant, pas une certification de fonctionnement.'}};}
 function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),30000);}
 $8('v8Check').onclick=()=>{$8('v8Diag').textContent=JSON.stringify(diagnostics(),null,2);};
 $8('v8DownloadDiag').onclick=()=>download(new Blob([JSON.stringify(diagnostics(),null,2)],{type:'application/json'}),'JACK22-diagnostic.json');
@@ -3782,8 +3782,8 @@ window.JACK22_BUILD='VISION8.9-ORBITE';sync();current=snap();last=fingerprint();
    if(label.querySelector('.dockRowMute'))return;
    const button=document.createElement('button');button.type='button';button.className='dockRowMute';button.textContent='M';button.setAttribute('aria-label','Mute '+title);
    function target(){
-    if(slot)return original(slot,'mute');
-    if(ti!==undefined)return document.querySelector('.mute[data-track-key="'+['drums','bass','melody'][Number(ti)]+'"]');
+    {const hook=window.J22RowSource&&window.J22RowSource(row);if(hook)return hook;}if(slot)return original(slot,'mute');
+    if(ti!==undefined)return document.querySelector('.mute[data-track-key="'+((typeof song!=='undefined'&&song.tracks[Number(ti)])||{}).key+'"]');
     return $d('audioMute');
    }
    const source=target();button.disabled=!source||source.disabled;button.setAttribute('aria-pressed',source?.getAttribute('aria-pressed')||'false');
@@ -3853,7 +3853,7 @@ window.JACK22_BUILD='VISION8.9-ORBITE';sync();current=snap();last=fingerprint();
   block.classList.add('orbitHasPreview');
  }
  const tints=['#d5a34f','#a06bce','#54b99a','#519ec9','#69bdc9','#bd81a3'];
- function rowSource(row){const lane=row.querySelector('.tl-lane'),name=row.querySelector('b')?.textContent||'',match=name.match(/^VOIX\s+(\d)/);if(match)return $('cVoice'+match[1])?.querySelector('[data-action="mute"]');if(lane?.dataset.ti!==undefined)return document.querySelector('.mute[data-track-key="'+['drums','bass','melody'][Number(lane.dataset.ti)]+'"]');return $('audioMute');}
+ function rowSource(row){{const hook=window.J22RowSource&&window.J22RowSource(row);if(hook)return hook;}const lane=row.querySelector('.tl-lane'),name=row.querySelector('b')?.textContent||'',match=name.match(/^VOIX\s+(\d)/);if(match)return $('cVoice'+match[1])?.querySelector('[data-action="mute"]');if(lane?.dataset.ti!==undefined)return document.querySelector('.mute[data-track-key="'+((typeof song!=='undefined'&&song.tracks[Number(lane.dataset.ti)])||{}).key+'"]');return $('audioMute');}
  function refreshRows(){
   all('#tlRows>.tl-row').forEach(row=>{
    const label=row.querySelector('.tl-label'),lane=row.querySelector('.tl-lane');if(!label||!lane)return;
@@ -4800,7 +4800,7 @@ function download(blob,name){const u=URL.createObjectURL(blob),a=document.create
 function noteIds(){const multi=window.JACK22_MULTI_NOTES?.indices()||[];return multi.length?multi:rollSel?[roll.notes.indexOf(rollSel)]:roll.notes.map((_,i)=>i);}
 function music(action,value){assertReady();const ids=noteIds(),r=M.notes(roll.notes,roll.steps,ids,action,value);return window.JACK22_NOTE_EDITOR.commit(r,action,ids);}
 async function stems(){assertReady();if(!window.l3Ready())throw Error('Attends les traitements voix.');const data=exportData(),opts=expOpts(),plan=exportPlan(data,opts);if(plan.seconds>EXPORT_MAX_SECONDS)throw Error('Durée exportable dépassée.');const lanes=data.song?data.trackKeys.filter((k,i)=>data.song.blocks.some(b=>b.ti===i)):['drums',...data.rolls.map(r=>r.trackKey)];const entries=[];busy=true;exporting=true;try{for(const key of lanes){say('Export séparé : '+key+'…');const d={...data,fixedPlan97:{bars:plan.bars,steps:plan.steps,loopBars:plan.loopBars,bodySec:plan.bodySec,seconds:plan.seconds,frames:plan.frames,tail:plan.tail},settings:{...data.settings,production97:copy(data.production97),master:100,fx:fxMerge({})},audio:null,take:null};d.settings.fx.reverb.on=false;d.settings.fx.delay.on=false;d.settings.fx.comp.on=false;d.settings.fx.eq={low:0,mid:0,high:0};if(d.song)d.song={...d.song,blocks:d.song.blocks.filter(b=>data.trackKeys[b.ti]===key)};else {d.pattern=key==='drums'?data.pattern:names.map(()=>Array(16).fill(false));d.rolls=data.rolls.filter(r=>r.trackKey===key);}const out=await renderSong(d,{...opts,includeMelody:false});entries.push({name:key+'.wav',blob:new Blob([out.wav])});}
- for(const c of data.audio?.clips||[]){const d={...data,fixedPlan97:{bars:plan.bars,steps:plan.steps,loopBars:plan.loopBars,bodySec:plan.bodySec,seconds:plan.seconds,frames:plan.frames,tail:plan.tail},pattern:names.map(()=>Array(16).fill(false)),rolls:[],take:null,song:data.song?{...data.song,blocks:[]}:null,audio:{...data.audio,clips:[c]}};const out=await renderSong(d,{...opts,includeMelody:false});entries.push({name:'audio-'+c.id+'.wav',blob:new Blob([out.wav])});}
+ for(const [stemName,stemClips] of (window.J22StemGroups?.(data.audio?.clips||[])||(data.audio?.clips||[]).map(c=>['audio-'+c.id,[c]]))){const d={...data,fixedPlan97:{bars:plan.bars,steps:plan.steps,loopBars:plan.loopBars,bodySec:plan.bodySec,seconds:plan.seconds,frames:plan.frames,tail:plan.tail},pattern:names.map(()=>Array(16).fill(false)),rolls:[],take:null,song:data.song?{...data.song,blocks:[]}:null,audio:{...data.audio,clips:stemClips}};const out=await renderSong(d,{...opts,includeMelody:false});entries.push({name:stemName+'.wav',blob:new Blob([out.wav])});}
  if(!entries.length)throw Error('Aucune piste audible.');entries.push({name:'LIRE-MOI.txt',blob:new Blob(['JACK22 — pistes séparées alignées à zéro. Effets master retirés des instruments ; effets de piste conservés. Le master non linéaire ne se reconstruit pas forcément en additionnant les pistes.'])});download(await Zip.build(entries),'JACK22-pistes-separees.zip');say('Pistes séparées exportées.');}finally{exporting=false;busy=false;}}
 // Edits create a new WAV clip. The source remains available, preserving a reliable undo path.
 async function newAudio(source,channels,name,startBar){assertReady();if(audioImportCount()>=AUDIO_MAX_IMPORTS||audioClips.length>=AUDIO_MAX_FILES)throw Error('Capacité audio atteinte.');const frames=channels[0].length,sr=source.sampleRate,duration=frames/sr;if(audioClips.reduce((s,c)=>s+c.duration,0)+duration>AUDIO_MAX_TOTAL)throw Error('Limite audio en mémoire atteinte.');const wav=encodeWav(channels[0],channels[1]||channels[0],sr),view=new DataView(wav),buffer=new AudioBuffer({numberOfChannels:2,length:frames,sampleRate:sr});for(let ch=0;ch<2;ch++){const out=buffer.getChannelData(ch);for(let i=0;i<frames;i++)out[i]=view.getInt16(44+i*4+ch*2,true)/32768;}const blob=new Blob([wav],{type:'audio/wav'});return remember(()=>{const c={id:audioNextId++,name:name.slice(0,120),duration,buffer,startBar,peaks:audioPeaks(buffer,800),blob,type:'wav',size:blob.size,fileId:newFileId(),hash:null,stored:false,missing:false,why:null};audioClips.push(c);tlSelAudio=c.id;tlBuild();return c;});}
@@ -4819,21 +4819,21 @@ function render(){body.replaceChildren();for(const b of $('j97Tabs').children)b.
  if(midiRecording&&tab!=='midi'){para('Capture MIDI active : termine-la dans Clavier MIDI avant de modifier le projet.');return;}
  if(tab==='tracks'){const r=row(),name=label('Nouvelle piste','text','Instrument',undefined,undefined,r);button('Ajouter',()=>{addTrack(name.value);render();say('Piste instrument ajoutée.');},r);song.tracks.forEach((tr,i)=>{const r=row(),n=label('Nom','text',tr.label,undefined,undefined,r);n.maxLength=40;button('Renommer',()=>remember(()=>{if(!n.value.trim())throw Error('Nom vide.');tr.label=n.value.trim();syncTrackOptions();buildPatternUI();}),r);button('Éditer',()=>{if(i===0){window.JACK22_WORKSPACE.enter();window.JACK22_WORKSPACE.choose('compose','beat');}else{rollTrack=i;syncTrackOptions();rollLoad(activePat(i));window.JACK22_WORKSPACE.enter();}dlg.close();},r);if(i>=3){button('↑',()=>remember(()=>{if(i<=3)return;[song.tracks[i-1],song.tracks[i]]=[song.tracks[i],song.tracks[i-1]];rollTrack=2;syncTrackOptions();rollLoad(activePat(2));buildPatternUI();render();}),r);button('Supprimer',()=>{if(confirm('Supprimer cette piste et ses blocs ?')){removeTrack(tr.key);render();}},r);}});para('Les trois pistes d’origine restent disponibles. Les pistes ajoutées disposent de patterns, de leur ligne d’arrangement et d’un canal de mixage.');}
  if(tab==='notes'){const r=row(),vel=label('Vélocité','number',100,1,127,r);button('Appliquer',()=>{music('velocity',Number(vel.value));say('Vélocité appliquée.');},r);const g=label('Glissé (secondes)','number',.12,0,1,r);button('Appliquer le glissé',()=>{music('glide',Number(g.value));say('Glissé appliqué entre les notes successives de la piste.');},r);const r2=row(),root=select('Tonalité',Array.from({length:12},(_,i)=>[i,['Do','Do♯','Ré','Ré♯','Mi','Fa','Fa♯','Sol','Sol♯','La','La♯','Si'][i]]),r2),scale=select('Gamme',[['minor','Mineure'],['major','Majeure'],['pentatonic','Pentatonique']],r2);button('Recaler dans la gamme',()=>music('scale',{root:Number(root.value),scale:scale.value}),r2);const r3=row(),ch=select('Accord',[['minor','Mineur'],['major','Majeur'],['seventh','Septième']],r3);button('Créer l’accord',()=>music('chord',ch.value),r3);const ar=select('Pas arpège',[[1,'1/16'],[2,'1/8'],[4,'1/4']],r3);button('Arpéger les accords',()=>music('arpeggio',Number(ar.value)),r3);button('Exporter les notes MIDI',()=>download(new Blob([M.midi(roll.notes,getBpm())],{type:'audio/midi'}),'JACK22-pattern.mid'));para('Cible : sélection multiple, puis note sélectionnée, sinon tout le pattern. Annuler fonctionne dans le Piano Roll et l’historique du projet. Le swing batterie existe déjà dans Mixage → Automation.');}
- if(tab==='mix'){const r=row();for(const [key,name]of [['instruments','Groupe instruments'],['voices','Groupe audio / voix']]){const n=label(name+' (%)','number',config.groups[key].level,0,150,r);button('Appliquer '+name,()=>remember(()=>{const v=Number(n.value);if(!Number.isFinite(v)||v<0||v>150)throw Error('Niveau invalide.');config.groups[key].level=v;say('Appliqué à la prochaine lecture et au WAV.');}),r);}const grid=document.createElement('div');grid.className='j97Mixer';body.append(grid);for(const tr of [...song.tracks,{key:'voices',label:'Voix'},{key:'imports',label:'Audio importé'}]){const c=channel(tr.key),card=document.createElement('div');card.className='j97Card';grid.append(card);const h=document.createElement('h3');h.textContent=tr.label;card.append(h);const level=label('Volume %','number',c.level,0,150,card),pan=label('Panoramique','number',c.pan,-1,1,card),low=label('Graves dB','number',c.low,-12,12,card),send=label('Réverb commune %','number',c.send,0,100,card),duck=label('Ducking kick %','number',c.duck,0,100,card);const mute=label('Muet','checkbox','',undefined,undefined,card),solo=label('Solo','checkbox','',undefined,undefined,card),comp=label('Compression','checkbox','',undefined,undefined,card);mute.checked=c.mute;solo.checked=c.solo;comp.checked=c.comp;const points=document.createElement('textarea');points.setAttribute('aria-label','Automation volume '+tr.label);points.placeholder='Automation : mesure, pourcentage\n1,100\n5,70';points.value=c.points.map(p=>p.bar+','+p.level).join('\n');card.append(points);button('Appliquer',()=>remember(()=>{const next=copy(config);next.mix[tr.key]={level:Number(level.value),pan:Number(pan.value),low:Number(low.value),send:Number(send.value),duck:Number(duck.value),mute:mute.checked,solo:solo.checked,comp:comp.checked,points:points.value.trim()?points.value.trim().split('\n').map(l=>{const a=l.split(',').map(Number);if(a.length!==2)throw Error('Courbe : mesure, pourcentage.');return{bar:a[0],level:a[1]};}):[]};config=validate(next);say('Canal enregistré : prochaine lecture et export.');}),card);}para('Chaîne fixe : graves → compresseur → panoramique → volume/automation → ducking → groupe. Départ vers une réverb commune. Le ducking suit les coups de kick programmés.');}
+ if(tab==='mix'){const r=row();for(const [key,name]of [['instruments','Groupe instruments'],['voices','Groupe audio / voix']]){const n=label(name+' (%)','number',config.groups[key].level,0,150,r);button('Appliquer '+name,()=>remember(()=>{const v=Number(n.value);if(!Number.isFinite(v)||v<0||v>150)throw Error('Niveau invalide.');config.groups[key].level=v;say('Appliqué à la prochaine lecture et au WAV.');}),r);}const grid=document.createElement('div');grid.className='j97Mixer';body.append(grid);for(const tr of [...song.tracks,{key:'voices',label:'Voix'},{key:'imports',label:'Audio importé'}]){const c=channel(tr.key),card=document.createElement('div');card.className='j97Card';grid.append(card);const h=document.createElement('h3');h.textContent=tr.label;card.append(h);const level=label('Volume %','number',c.level,0,150,card),pan=label('Panoramique','number',c.pan,-1,1,card),low=label('Graves dB','number',c.low,-12,12,card),send=label('Réverb commune %','number',c.send,0,100,card),duck=label('Ducking kick %','number',c.duck,0,100,card);const mute=label('Muet','checkbox','',undefined,undefined,card),solo=label('Solo','checkbox','',undefined,undefined,card),comp=label('Compression','checkbox','',undefined,undefined,card);mute.checked=c.mute||!!(window.J22ShowTrackMute&&window.J22ShowTrackMute(tr));solo.checked=c.solo;comp.checked=c.comp;const points=document.createElement('textarea');points.setAttribute('aria-label','Automation volume '+tr.label);points.placeholder='Automation : mesure, pourcentage\n1,100\n5,70';points.value=c.points.map(p=>p.bar+','+p.level).join('\n');card.append(points);button('Appliquer',()=>remember(()=>{const next=copy(config);next.mix[tr.key]={level:Number(level.value),pan:Number(pan.value),low:Number(low.value),send:Number(send.value),duck:Number(duck.value),mute:mute.checked,solo:solo.checked,comp:comp.checked,points:points.value.trim()?points.value.trim().split('\n').map(l=>{const a=l.split(',').map(Number);if(a.length!==2)throw Error('Courbe : mesure, pourcentage.');return{bar:a[0],level:a[1]};}):[]};config=validate(next);if(window.J22SetTrackMute)window.J22SetTrackMute(tr.key,mute.checked);say('Canal enregistré : prochaine lecture et export.');}),card);}para('Chaîne fixe : graves → compresseur → panoramique → volume/automation → ducking → groupe. Départ vers une réverb commune. Le ducking suit les coups de kick programmés.');}
  if(tab==='audio')audioUI();
  if(tab==='sample'){const s=select('Source',audioClips.filter(c=>c.buffer).map(c=>[c.id,c.name]));s.value=String(config.sample.clipId);const root=label('Note racine MIDI','number',config.sample.root,24,95),attack=label('Attaque (s)','number',config.sample.attack,.001,1),release=label('Relâchement (s)','number',config.sample.release,.01,2);button('Charger dans le sampler',()=>remember(()=>{const next=copy(config);next.sample={clipId:Number(s.value),root:Number(root.value),attack:Number(attack.value),release:Number(release.value)};if(!audioClips.some(c=>c.id===next.sample.clipId&&c.buffer))throw Error('Importe une source audio.');config=validate(next);$('preset').value='sample97';$('preset').dispatchEvent(new Event('change'));$('rollSound').value='sample97';trackSound[rollTrack]='sample97';say('Source chargée. Le clavier et les notes Sampler utilisent ce son.');}));para('Importe une source depuis Arrangement → Importer audio. Le sampler transpose par vitesse de lecture ; il ne conserve donc pas la durée lors du changement de hauteur.');}
  if(tab==='midi')midiUI();
  if(tab==='export'){button('Exporter les pistes séparées en ZIP',stems);para('Chaque fichier commence au temps zéro. Instruments : effets de piste conservés, effets master désactivés. Audio : traitements voix et master actuels. Les canaux muets restent muets. Les fichiers peuvent avoir des queues de durée différente.');button('Mesurer le WAV du mix sans écoute',async()=>{assertReady();busy=true;try{const r=await renderSong(exportData(),expOpts());const v=new DataView(r.wav);let peak=0,sum=0,n=0;for(let i=44;i<v.byteLength;i+=2){const x=v.getInt16(i,true)/32768;peak=Math.max(peak,Math.abs(x));sum+=x*x;n++;}say('WAV PCM16 : crête '+(20*Math.log10(peak||1e-12)).toFixed(1)+' dBFS · RMS '+(20*Math.log10(Math.sqrt(sum/n)||1e-12)).toFixed(1)+' dBFS. Mesure après conversion ; LUFS/true peak non mesurés.');}finally{busy=false;}});}
 }
 function audioUI(){const s=select('Clip',audioClips.filter(c=>c.buffer).map(c=>[c.id,c.name]));const chosen=()=>audioClips.find(c=>c.id===Number(s.value));const canvas=document.createElement('canvas');canvas.width=1000;canvas.height=110;body.append(canvas);const r=row(),start=label('Début (s)','number',0,0,600,r),end=label('Fin (s)','number',chosen()?.buffer.duration||1,0,600,r),fadeIn=label('Fondu entrée (s)','number',.01,0,10,r),fadeOut=label('Fondu sortie (s)','number',.02,0,10,r),gain=label('Gain dB','number',0,-60,12,r),reverse=label('Inverser','checkbox','',undefined,undefined,r);const draw=()=>{const c=chosen();if(!c)return;end.value=c.buffer.duration;const x=canvas.getContext('2d');x.clearRect(0,0,1000,110);x.strokeStyle='#69b7a0';x.beginPath();for(let i=0;i<800;i++){const y=(c.peaks?.[i]||0)*48;x.moveTo(i*1.25,55-y);x.lineTo(i*1.25,55+y);}x.stroke();};s.onchange=draw;draw();button('Créer une version montée',async()=>{assertReady();const c=chosen();if(!c)throw Error('Choisis un clip.');const b=c.buffer,channels=Array.from({length:b.numberOfChannels},(_,i)=>b.getChannelData(i));const out=M.edit(channels,b.sampleRate,Number(start.value),Number(end.value),Number(fadeIn.value),Number(fadeOut.value),Math.pow(10,Number(gain.value)/20),reverse.checked);const created=await newAudio(b,out,c.name+' · montage',c.startBar);remember(()=>{config.clips[c.id]={mute:true};});say('Version '+created.name+' créée. Source conservée et rendue muette.');});button('Couper au temps Début',async()=>{assertReady();const c=chosen(),split=Number(start.value);if(!c||split<=0||split>=c.buffer.duration)throw Error('Choisis un point à l’intérieur du clip.');if(audioImportCount()+2>AUDIO_MAX_IMPORTS||audioClips.length+2>AUDIO_MAX_FILES)throw Error('Deux emplacements libres nécessaires.');const exact=split/barSec();if(Math.abs(exact-Math.round(exact))>1e-6)throw Error('Pour cette version, la coupe doit être sur une limite de mesure.');const b=c.buffer,src=Array.from({length:b.numberOfChannels},(_,i)=>b.getChannelData(i));if(audioClips.reduce((n,c)=>n+c.duration,0)+b.duration>AUDIO_MAX_TOTAL)throw Error('Limite audio dépassée.');await newAudio(b,M.edit(src,b.sampleRate,0,split,.005,.005,1),c.name+' · A',c.startBar);await newAudio(b,M.edit(src,b.sampleRate,split,b.duration,.005,.005,1),c.name+' · B',c.startBar+Math.round(exact));remember(()=>{config.clips[c.id]={mute:true};});say('Deux clips créés. Source conservée et muette.');});button('Muet / réactiver la source',()=>remember(()=>{const c=chosen();if(!c)throw Error('Choisis un clip.');config.clips[c.id]={mute:!config.clips[c.id]?.mute};say(config.clips[c.id].mute?'Clip muet.':'Clip réactivé.');}));button('Conserver la prise voix comme alternative',()=>remember(()=>{const c=chosen();if(!c?.voice)throw Error('Choisis une prise voix.');const old=copy(c.voice);config.clips[c.id]={mute:true,archivedVoice:old};c.voice=null;say('Ancienne prise conservée et muette. Son emplacement voix est libre pour une nouvelle prise.');}));button('Remettre une prise alternative dans son emplacement voix',()=>remember(()=>{const c=chosen(),v=config.clips[c?.id]?.archivedVoice;if(!v)throw Error('Ce clip n’est pas une alternative voix.');if(audioClips.some(x=>x.voice?.slot===v.slot))throw Error('Cet emplacement voix est occupé : conserve d’abord la prise actuelle comme alternative.');c.voice=copy(v);config.clips[c.id]={mute:false};window.Jack22Lot3.schedule();tlBuild();say('Prise alternative restaurée dans son emplacement voix.');}));para('Les montages sont de nouveaux WAV : les originaux restent présents. Découpe, fondus, gain et inversion disponibles ; étirement temporel et assemblage automatique de prises restent à développer.');}
-async function connectMIDI(){if(!navigator.requestMIDIAccess)throw Error('Web MIDI indisponible dans ce navigateur.');midiAccess=await navigator.requestMIDIAccess({sysex:false});function attach(){for(const input of midiAccess.inputs.values())input.onmidimessage=receiveMIDI;}attach();midiAccess.onstatechange=attach;return midiAccess;}
-function receiveMIDI(e){const [status,note,vel]=e.data,on=(status&240)===144&&vel>0,off=(status&240)===128||((status&240)===144&&!vel);if(!on&&!off)return;if(dlg.open&&!midiRecording)return;const source='midi97-'+(status&15)+'-'+note;
+function releaseInput(id){const key=String(id||'').replace(/[^A-Za-z0-9_.:-]/g,'_');let n=0;for(const [k,v] of [...midiHeld]){if(k.startsWith('midi97-'+key+'-')){midiHeld.delete(k);if(!midiRecording&&v&&v.state&&engine)engine.releaseVoice(v);n++;}}return n;}async function connectMIDI(){if(!navigator.requestMIDIAccess)throw Error('Web MIDI indisponible dans ce navigateur.');midiAccess=await navigator.requestMIDIAccess({sysex:false});function attach(){for(const input of midiAccess.inputs.values())input.onmidimessage=receiveMIDI;}attach();midiAccess.onstatechange=e=>{attach();const p=e&&e.port;if(p&&p.type==='input'&&p.state==='disconnected')releaseInput(p.id);};return midiAccess;}
+function receiveMIDI(e){const [status,note,vel]=e.data,on=(status&240)===144&&vel>0,off=(status&240)===128||((status&240)===144&&!vel);if(!on&&!off)return;if(on&&dlg.open&&!midiRecording)return;const port=String((e.target&&e.target.id)||(e.currentTarget&&e.currentTarget.id)||'').replace(/[^A-Za-z0-9_.:-]/g,'_'),source='midi97-'+port+'-'+(status&15)+'-'+note;
  if(on){if(note<24||note>95)return;if(midiRecording){if(!midiHeld.has(source)){midiOrigin=midiOrigin??performance.now();midiHeld.set(source,{time:performance.now(),note,velocity:vel});}}else {if(persistBusy||exporting||window.Jack22Voice.state.active)return;initAudio();audio.resume();const v=engine.startVoice(source,$('preset').value,Math.floor(note/12)-1,note%12,audio.currentTime,{velocity:vel,trackKey:song.tracks[rollTrack].key});midiHeld.set(source,v);}}
  if(off){const v=midiHeld.get(source);if(!v)return;midiHeld.delete(source);if(midiRecording){const sl=60000/getBpm()/4,start=Math.round((v.time-midiOrigin)/sl),dur=Math.max(1,Math.round((performance.now()-v.time)/sl));if(start<roll.steps)midiPending.push({start,dur:Math.min(dur,roll.steps-start),preset:midiTarget.preset,octave:Math.floor(v.note/12)-1,idx:v.note%12,velocity:v.velocity});}else engine.releaseVoice(v);}}
 function midiUI(){button('Connecter un clavier MIDI',async()=>{await connectMIDI();say(midiAccess.inputs.size+' entrée(s) MIDI détectée(s).');});button('Enregistrer les notes MIDI sans écoute',async()=>{assertReady();if(!midiAccess)await connectMIDI();midiHeld.clear();midiPending=[];midiOrigin=null;midiTarget={track:rollTrack,pattern:activePat(rollTrack).id,preset:$('rollSound').value};midiRecording=true;say('Capture MIDI active. Joue puis clique Terminer. Le premier appui définit le début.');});button('Terminer la capture MIDI',()=>{if(!midiRecording)throw Error('Aucune capture active.');if(midiHeld.size)throw Error('Relâche toutes les touches.');midiRecording=false;if(midiTarget.track!==rollTrack||midiTarget.pattern!==activePat(rollTrack).id)throw Error('Pattern changé : capture abandonnée.');const next=[...roll.notes,...midiPending],valid=window.JACK22_NOTE_TOOLS.validate(next,roll.steps);if(!valid.ok)throw Error(valid.error);window.JACK22_NOTE_EDITOR.commit({ok:true,notes:next,changed:!!midiPending.length},'midi',[]);say(midiPending.length+' note(s) MIDI capturée(s).');midiPending=[];});para('Autorisation MIDI du navigateur nécessaire. Capture quantifiée au 1/16, sans son. Hors capture et fenêtre fermée, le clavier MIDI joue le son sélectionné. Les contrôleurs CC et pédales ne sont pas encore pris en charge.');}
 const menu=document.querySelector('.dockProject .dockPopupBody');button('Production…',()=>{document.querySelector('.dockProject').open=false;open()},menu);
 const notesMenu=$('j94Tools')?.querySelector('.j94Menu');if(notesMenu)button('Gammes, accords & vélocité…',()=>{$('j94Tools').open=false;open('notes')},notesMenu);
-window.JACK22_PRODUCTION={version:'9.7-candidate',open,addTrack,removeTrack,syncTrackOptions,music,validate,get config(){return copy(config)},stems,newAudio,receiveMIDI};
+window.JACK22_PRODUCTION={version:'9.7-candidate',open,addTrack,removeTrack,syncTrackOptions,music,validate,get config(){return copy(config)},stems,newAudio,receiveMIDI,releaseInput,setChannelMute:(k,on)=>{const c=config.mix[k];if(!c)return false;c.mute=!!on;return true;}};
 syncTrackOptions();window.JACK22_BUILD='JACK22-10.2-STYLE-CANDIDATE';
 })();
 </script>
@@ -4967,7 +4967,7 @@ function render(laneId){body.replaceChildren();const r=row(),name=input('Nouvell
  const h2=document.createElement('h3');h2.textContent='Fondu croisé';body.append(h2);const r6=row(),first=select('Premier clip',audioClips.map(c=>[c.id,c.name]),r6),second=select('Second clip',audioClips.map(c=>[c.id,c.name]),r6);button('Créer le raccord',async()=>{selected=await crossfade(Number(first.value),Number(second.value));render(tr.value);say('Raccord créé. Les deux sources restent conservées et muettes.');},r6);p('Place les deux clips sur la même piste avec un chevauchement de cinq secondes maximum. Le second doit prolonger le premier. Le raccord est rendu dans un nouveau WAV.');p('Sur la timeline, glisse un clip horizontalement pour le déplacer (calé au 1/16 ; Alt enfoncé : sans grille), ou verticalement vers une autre piste audio. Glisse ses bords pour le couper sans toucher au fichier ; Ctrl ou Maj + clic pour en sélectionner plusieurs. Les champs permettent un placement à l’échantillon près au tempo courant. Les positions suivent ensuite le tempo du morceau ; le contenu audio n’est pas étiré.');p('La découpe, la copie et le fondu figent les traitements déjà préparés et le volume de la voix dans les nouveaux fichiers. Les sources restent disponibles. Les nouveaux fichiers utilisent les emplacements et la mémoire audio existants.');if(window.C128Section)window.C128Section(body,c,say,()=>render(tr.value));p('Version candidate : essais matériels à compléter.');}
 function open(id,lane){selected=id??tlSelAudio;render(lane);if(!dlg.open)dlg.showModal();dlg.querySelector('#j99Close').focus();}
 button('Pistes audio & montage précis…',()=>{document.querySelector('.dockProject').open=false;open();},document.querySelector('.dockProject .dockPopupBody'));
-window.JACK22_AUDIO_EDIT={startStep,seconds,place:(id,at,lane)=>change(()=>place(audioClips.find(c=>c.id===id),at,lane)),addTrack,splitClip,crossfade,duplicate,open,validate,get settings(){return copy(settings)}};Object.defineProperties(window.JACK22_AUDIO_EDIT,Object.getOwnPropertyDescriptors(C128API()));
+window.JACK22_AUDIO_EDIT={startStep,seconds,place:(id,at,lane)=>change(()=>place(audioClips.find(c=>c.id===id),at,lane)),addTrack,splitClip,crossfade,duplicate,open,validate,setTrack:(id,props)=>{const t=settings.tracks.find(x=>x.id===id);if(!t)throw Error('Piste introuvable.');for(const k of ['mute','solo'])if(props&&k in props)t[k]=!!props[k];try{tlBuild();}catch(e){}return true;},get settings(){return copy(settings)}};Object.defineProperties(window.JACK22_AUDIO_EDIT,Object.getOwnPropertyDescriptors(C128API()));
 tlBuild();
 })();
 </script>
@@ -9575,4 +9575,307 @@ html body.c143On #timeline .tl-aud.sel{outline:2px solid var(--j-red2,#db3d46)!i
  document.addEventListener('close', e => { if (e.target?.id === 'j100Dialog' || e.target?.id === 'j101Dialog') setTimeout(() => { try { tlBuild(); } catch (x) {} }, 50); }, true);
  setTimeout(deco, 800);
  window.JACK22_CONSOLE147 = { version: '11.5-claude-7.6-console-pistes', has, channels: window.J22AudioChannels };
+})();</script>
+<style id="c148Style">
+/* 7.7 — M6 « Pistes séparées par piste audio ». Une case dans Production › Export séparé. */
+#j97Body .c148Opt{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;margin:6px 0 2px;color:#e6e6e6;font:500 13px/1.3 system-ui,"Segoe UI",sans-serif;cursor:pointer}
+#j97Body .c148Opt input{display:inline-block!important;flex:0 0 16px;accent-color:#d6343b;width:16px!important;height:16px;min-height:0!important;margin:0!important}
+</style>
+<script id="c148Script">(() => {
+ 'use strict';
+ // Principe : « Export séparé » rend déjà un fichier par clip audio (audio-<id>.wav). Avec l'option « Un fichier par piste
+ // audio » cochée, les clips sont groupés par piste du montage (AUDIO, VOIX 1 à 3, pistes ajoutées) : un fichier par piste,
+ // nommé comme elle, avec ses effets (rack et courbes de la 7.6) puisque le rendu passe par le même chemin que l'export WAV.
+ // Option éteinte (par défaut) : rien ne change, un fichier par clip comme avant.
+ const KEY = 'jack22.c148.stemsByTrack';
+ const A = () => window.JACK22_AUDIO_EDIT;
+ let on = false; try { on = localStorage.getItem(KEY) === '1'; } catch (e) {}
+ const set = v => { on = !!v; try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (e) {} return on; };
+ const safe = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9 _-]+/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'piste';
+ // [[nom de fichier sans .wav, [clips]], …] dans l'ordre des pistes du montage ; null si l'option est éteinte.
+ const groups = clips => {
+  if (!on) return null;
+  const tracks = A()?.settings?.tracks || [], by = new Map();
+  for (const c of clips) { let lane = 'audio'; try { lane = A()?.lane(c.id) || 'audio'; } catch (e) {} if (!by.has(lane)) by.set(lane, []); by.get(lane).push(c); }
+  const order = [...tracks.map(t => t.id).filter(id => by.has(id)), ...[...by.keys()].filter(id => !tracks.some(t => t.id === id))];
+  return order.map((id, i) => { const t = tracks.find(x => x.id === id); return ['piste-' + String(i + 1).padStart(2, '0') + '-' + safe(t?.name || id), by.get(id)]; });
+ };
+ window.J22StemGroups = groups;
+ // Case à cocher sous « Exporter les pistes séparées en ZIP ».
+ const deco = () => {
+  const body = document.getElementById('j97Body'); if (!body) return;
+  const b = [...body.querySelectorAll('button')].find(x => x.textContent.trim() === 'Exporter les pistes séparées en ZIP');
+  if (!b || body.querySelector('.c148Opt')) return;
+  const l = document.createElement('label'); l.className = 'c148Opt';
+  l.innerHTML = '<input type="checkbox" id="c148ByTrack"> Un fichier par piste audio du montage (au lieu d’un fichier par clip)';
+  const i = l.querySelector('input'); i.checked = on; i.addEventListener('change', () => set(i.checked));
+  b.after(l);
+ };
+ try { const body = document.getElementById('j97Body'); if (body) new MutationObserver(deco).observe(body, { childList: true }); } catch (e) {}
+ window.JACK22_STEMS148 = { version: '11.5-claude-7.7-stems-pistes', get on() { return on; }, set, groups };
+})();</script>
+<style id="c149Style">
+/* 7.8 — retours de Bob sur le clavier du bas. Le son ne change pas.
+   1. « Afficher le clavier / Grand Piano Roll » : sur écran étroit (≤ 950 px, par ex. Edge zoomé sur un portable), une règle plus
+      ancienne forçait le clavier à rester affiché ; le bouton ne faisait donc rien. Cette règle-ci, plus précise, le replie partout. */
+html body.j93Workspace.c118Big #dockStage#dockStage.j108Notes>#synth#synth{display:none!important}
+/* 2. Un seul bouton dans la barre du clavier (demande de Bob) : le bouton « HARMONIQUES 808 », qui apparaissait en plus quand on
+      choisit le son 808, disparaît. Il reste « VOLUME SYNTHÉ », qui règle aussi le 808. Les harmoniques gardent leur valeur
+      (50 % par défaut, ou celle du projet) : le son ne change pas. L'aide qui parlait de ce curseur est masquée avec lui. */
+html body #harmCtl#harmCtl,html body #harmCtl#harmCtl.on,html body #harmHint#harmHint,html body #harmHint#harmHint.on{display:none!important}
+/* 3. Touche jouée : sa couleur passe devant le vert des touches blanches (la règle verte c134 était plus forte et la masquait). */
+html body #piano#piano#piano .key.down,html body #piano#piano#piano .key.c116Lit{background:var(--c116C,var(--c116On))!important;box-shadow:0 0 16px var(--c116C,var(--c116On)),0 0 3px #fff,inset 0 0 10px rgba(255,255,255,.55)!important}
+html body #piano#piano#piano .key.down::after,html body #piano#piano#piano .key.c116Lit::after{color:#0b0b0b!important}
+</style>
+<script id="c149Script">(() => {
+ 'use strict';
+ // 3. Couleurs du clavier : chaque note jouée (au clic, au clavier de l'ordinateur, en MIDI ou pendant la lecture) allume sa touche
+ //    d'une couleur vive tirée au hasard ; une nouvelle couleur à chaque nouvelle note. Aucun effet sur le son.
+ const piano = document.getElementById('piano'); if (!piano) return;
+ const ON = /(^|\s)(down|c116Lit)(\s|$)/;
+ let n = 0;
+ const pick = k => { n++; const last = k && k.dataset.c149h !== undefined ? Number(k.dataset.c149h) : NaN; let h = 0, tries = 0; do { h = Math.floor(Math.random() * 360); tries++; } while (Number.isFinite(last) && Math.min(Math.abs(h - last), 360 - Math.abs(h - last)) < 60 && tries < 50); if (k) k.dataset.c149h = String(h); return 'hsl(' + h + ' 90% 60%)'; };
+ const sync = k => {
+  if (!k.classList || !k.classList.contains('key')) return;
+  const lit = ON.test(k.className);
+  if (lit) {
+   if (!k.dataset.c149) k.dataset.c149 = pick(k);
+   if (k.style.getPropertyValue('--c116C') !== k.dataset.c149) k.style.setProperty('--c116C', k.dataset.c149);
+  } else if (k.dataset.c149) { delete k.dataset.c149; k.style.removeProperty('--c116C'); }
+ };
+ new MutationObserver(list => { for (const m of list) sync(m.target); }).observe(piano, { subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
+ window.JACK22_CLAVIER149 = { version: '11.5-claude-7.8-clavier', get notes() { return n; } };
+})();</script>
+<style id="c150Style">
+/* 7.9 — audit « Mute, MIDI et démarrage audio ». Le son des projets ne change pas tant qu'on ne touche à rien. */
+/* Ligne « PRISE SYNTHÉ » de l'arrangement (seulement quand une prise existe) : même aspect que les autres lignes. */
+#tlRows .c150TakeRow .tl-lane{pointer-events:none}
+html body #tlRows#tlRows .tl-row.c150TakeRow .tl-label>b{font-size:10px!important;letter-spacing:0!important}
+/* Grand Piano Roll : clavier replié → la grille prend toute la hauteur libérée, aussi en fenêtre étroite (≤ 950 px). */
+html body.j93Workspace.c118Big #dockStage#dockStage.j108Notes>#roll#roll{flex:1 1 auto!important;height:auto!important;max-height:none!important;min-height:0!important;align-self:stretch!important}
+/* Réglages du synthé (le réglage des harmoniques du 808 revient ici ; un seul bouton rond reste sur le clavier). */
+#synth details.c150Synth{position:relative;display:inline-block;margin-left:6px}
+#synth details.c150Synth>summary{list-style:none;cursor:pointer;height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:6px;border:1px solid #3a3d43;background:#1d2024;color:#eceef1;font:600 12px/1 system-ui,"Segoe UI",sans-serif;white-space:nowrap}
+#synth details.c150Synth>summary::-webkit-details-marker{display:none}
+#synth details.c150Synth[open]>summary{border-color:#d6343b}
+/* Le panneau du clavier masque ce qui dépasse : le menu est donc placé par rapport à la fenêtre, au-dessus du bouton. */
+#synth .c150SynthBody{position:fixed;z-index:200;width:290px;padding:12px;border-radius:8px;border:1px solid #3a3d43;background:#15171a;box-shadow:0 10px 26px rgba(0,0,0,.55);color:#e6e6e6;font:500 12.5px/1.4 system-ui,"Segoe UI",sans-serif}
+#synth .c150Row{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+#synth .c150Row span{flex:0 0 auto;color:#cfd2d6}
+#synth .c150Row input[type=range]{flex:1 1 auto;accent-color:#d6343b;min-width:0}
+#synth .c150Row output{flex:0 0 40px;text-align:right;font:600 12px/1 ui-monospace,Consolas,monospace;color:#f1eded}
+#synth .c150SynthBody button{height:28px;padding:0 10px;border-radius:6px;border:1px solid #3a3d43;background:#1d2024;color:#eceef1;font:600 12px/1 system-ui,"Segoe UI",sans-serif;cursor:pointer}
+#synth .c150Hint{margin:8px 0 0;color:#a9aeb6;font-size:11.5px}
+</style>
+<script id="c150Script">(() => {
+ 'use strict';
+ const $ = id => document.getElementById(id);
+ const A = () => window.JACK22_AUDIO_EDIT;
+
+ /* ---------- 1. Chaque voix sait de quelle piste et de quelle source elle vient ----------
+    Piano Roll (« roll ») : notes programmées d'une piste ; prise synthé (« take ») ; clavier (« live »). Un Mute de piste ne coupe
+    que les voix « roll » de cette piste : les autres pistes continuent, le transport ne bouge pas, les notes suivantes repartent
+    à leur place à la réactivation (le programmateur, lui, n'est jamais arrêté). */
+ let src = null;
+ const tagV = (v, opts, s) => { if (v && typeof v === 'object') { v.j22src = s; v.j22key = opts && opts.trackKey; } };
+ const wrapEngine = E => {
+  if (!E || E.__c150) return E; E.__c150 = true;
+  const sn = E.scheduleNote, sv = E.startVoice, rv = E.releaseVoice, kv = E.killVoice;
+  if (typeof sv === 'function') E.startVoice = function (source, presetKey, oct, idx, t, opts) {
+   const v = sv.apply(this, arguments);
+   try { if (v && typeof v === 'object') { tagV(v, opts, src || 'live'); if (typeof source === 'string' && source.startsWith('midi97-')) midiLight(v, oct, idx, true); } } catch (e) {}
+   return v;
+  };
+  if (typeof sn === 'function') E.scheduleNote = function (presetKey, oct, idx, t0, t1, opts) { const v = sn.apply(this, arguments); try { tagV(v, opts, src || 'other'); } catch (e) {} return v; };
+  if (typeof rv === 'function') E.releaseVoice = function (v) { try { if (v && v.j22midi != null) midiLight(v, 0, 0, false); } catch (e) {} return rv.apply(this, arguments); };
+  if (typeof kv === 'function') E.killVoice = function (v) { try { if (v && v.j22midi != null) midiLight(v, 0, 0, false); } catch (e) {} return kv.apply(this, arguments); };
+  return E;
+ };
+ const ce0 = createEngine; createEngine = function () { return wrapEngine(ce0.apply(this, arguments)); };
+ try { if (typeof engine !== 'undefined' && engine) wrapEngine(engine); } catch (e) {}
+ const rs0 = rollSchedule; rollSchedule = function () { const p = src; src = 'roll'; try { return rs0.apply(this, arguments); } finally { src = p; } };
+ const rc0 = recSchedule; recSchedule = function () { const p = src; src = 'take'; try { return rc0.apply(this, arguments); } finally { src = p; } };
+ const killWhere = pred => {
+  let n = 0;
+  try { if (typeof engine === 'undefined' || !engine) return 0; for (let i = melodyVoices.length - 1; i >= 0; i--) { const v = melodyVoices[i]; if (v && pred(v)) { try { engine.killVoice(v); } catch (e) {} melodyVoices.splice(i, 1); n++; } } } catch (e) {}
+  return n;
+ };
+ window.J22KillTrack = key => killWhere(v => v.j22src === 'roll' && v.j22key === key);
+
+ /* ---------- 2. Prise synthé : son propre Mute (lecture et WAV), enregistré avec le projet ---------- */
+ let takeMute = false, takeSig = null, sigRef = null, sigVal = null;
+ const curTake = () => { try { return take; } catch (e) { return null; } };
+ const sigOf = t => { if (!t) return null; if (t === sigRef) return sigVal; sigRef = t; sigVal = (t.steps || 0) + '|' + (t.notes || []).map(n => [n.start, n.dur, n.octave, n.idx].join(',')).join(';'); return sigVal; };
+ // Le Mute suit LA prise coupée : une nouvelle prise enregistrée repart non coupée.
+ window.J22TakeMuted = () => { const t = curTake(); return !!t && takeMute && sigOf(t) === takeSig; };
+ const setTakeMute = on => { const t = curTake(); if (!t) return false; takeMute = !!on; takeSig = sigOf(t); if (on) killWhere(v => v.j22src === 'take'); sync(); return true; };
+ const cap0 = VoiceStore.capture, par0 = VoiceStore.parse, set0 = VoiceStore.setText;
+ VoiceStore.capture = function () { const v = cap0.apply(this, arguments); try { if (v && window.J22TakeMuted()) v.mute150 = { version: 1, take: true, sig: takeSig }; } catch (e) {} return v; };
+ VoiceStore.parse = function (b) {
+  const r = par0.apply(this, arguments); if (!r) return r;
+  if (b && b.mute150 !== undefined) { const m = b.mute150; if (!m || m.version !== 1 || typeof m.take !== 'boolean' || (m.sig != null && (typeof m.sig !== 'string' || m.sig.length > 500000))) return false; return { ...r, mute150: { version: 1, take: m.take, sig: m.sig == null ? null : m.sig } }; }
+  return r;
+ };
+ VoiceStore.setText = function (v) { const r = set0.apply(this, arguments); const m = v && v.mute150; takeMute = !!(m && m.take); takeSig = (m && m.sig) || null; try { sync(); } catch (e) {} return r; };
+
+ /* ---------- 3. Pistes audio : chaque ligne coupe SES clips ----------
+    AUDIO → les WAV de la ligne AUDIO (plus les voix) ; « Piste audio n » → ses clips ; VOIX n → sa prise voix (inchangé).
+    L'ancienne coupure globale « AUDIO » d'un projet déjà enregistré reste respectée jusqu'au premier clic. */
+ let laneCache = null, laneT = 0;
+ const laneTracks = () => { const now = performance.now(); if (!laneCache || now - laneT > 150) { try { laneCache = (A() && A().settings && A().settings.tracks) || []; } catch (e) { laneCache = []; } laneT = now; } return laneCache; };
+ const legacyOn = () => { try { return !!audioMute; } catch (e) { return false; } };
+ window.J22LaneMuted = c => {
+  try { const id = A() && A().lane(c.id); if (!id) return false; const ts = laneTracks(), t = ts.find(x => x.id === id); if (!t) return false; const solo = ts.some(x => x.solo); return !!(t.mute || (solo && !t.solo)); } catch (e) { return false; }
+ };
+ const toggleLane = id => {
+  const t = laneTracks().find(x => x.id === id); if (!t) return false;
+  if (id === 'audio' && legacyOn()) { audioMute = false; try { syncAudioUi(); } catch (e) {} try { tlBuild(); } catch (e) {} }
+  else A().setTrack(id, { mute: !t.mute });
+  laneCache = null; try { audioApplyGain(); } catch (e) {} sync(); return true;
+ };
+ const host = document.createElement('div'); host.id = 'c150Sources'; host.hidden = true; document.body.append(host);
+ const srcFor = key => {
+  let b = host.querySelector('[data-c150-src="' + key + '"]');
+  if (!b) { b = document.createElement('button'); b.type = 'button'; b.dataset.c150Src = key; b.setAttribute('aria-pressed', 'false'); b.addEventListener('click', () => { if (key === 'take') setTakeMute(!window.J22TakeMuted()); else toggleLane(key.slice(5)); }); host.append(b); }
+  return b;
+ };
+ window.J22RowSource = row => {
+  if (!row || !row.classList) return null;
+  if (row.classList.contains('c150TakeRow')) return srcFor('take');
+  const lane = row.querySelector('.tl-lane'), id = lane && lane.dataset && lane.dataset.j99Lane;
+  if (id === 'audio' || (id && /^aud_/.test(id))) return srcFor('lane:' + id);
+  return null;
+ };
+ // Le petit « M » de la barre AUDIO (ancien bouton global) fait désormais la même chose que le M de la ligne AUDIO.
+ $('audioMute')?.addEventListener('click', e => { e.stopImmediatePropagation(); e.preventDefault(); toggleLane('audio'); }, true);
+
+ /* ---------- 4. Un seul état par piste instrument : arrangement, panneau Patterns et mixeur de la Production ----------
+    Exception : le canal « Mélodie » du mixeur porte aussi la prise synthé ; son M d'arrangement ne coupe donc que le Piano Roll
+    (la case « Muet » du mixeur, elle, coupe tout le canal, prise comprise). */
+ const linked = key => key !== 'melody';
+ window.J22ChannelMuted = key => { if (!linked(key)) return false; try { const c = window.JACK22_PRODUCTION && window.JACK22_PRODUCTION.config.mix[key]; return !!(c && c.mute); } catch (e) { return false; } };
+ window.J22SyncChannel = (key, on) => { if (!linked(key)) return; try { window.JACK22_PRODUCTION.setChannelMute && window.JACK22_PRODUCTION.setChannelMute(key, on); } catch (e) {} };
+ window.J22ShowTrackMute = tr => !!(tr && tr.mute && linked(tr.key));
+ window.J22SetTrackMute = (key, on) => {
+  if (!linked(key)) return;
+  try { const ti = song.tracks.findIndex(t => t.key === key); if (ti < 0) return; const tr = song.tracks[ti]; if (!!tr.mute === !!on) { sync(); return; } tr.mute = !!on; if (on && ti > 0) window.J22KillTrack(key); buildPatternUI(); uiExp(); sync(); } catch (e) {}
+ };
+
+ /* ---------- 5. Boutons M : état toujours à jour et périmètre écrit en clair ---------- */
+ const rowInfo = row => {
+  const lane = row.querySelector('.tl-lane'), title = row.querySelector('.tl-label b')?.textContent || '', voice = title.match(/^VOIX\s+(\d)/);
+  return { lane, title, voice: voice ? Number(voice[1]) : 0, ti: lane && lane.dataset.ti !== undefined ? Number(lane.dataset.ti) : null, j99: lane && lane.dataset.j99Lane };
+ };
+ const rowSourceOf = row => {
+  const hook = window.J22RowSource(row); if (hook) return hook;
+  const r = rowInfo(row);
+  if (r.voice) return $('cVoice' + r.voice)?.querySelector('[data-action="mute"]') || null;
+  if (r.ti !== null) return document.querySelector('.mute[data-track-key="' + ((song.tracks[r.ti] || {}).key) + '"]');
+  return null;
+ };
+ const scopeText = row => {
+  if (row.classList.contains('c150TakeRow')) return 'Prise synthé (jouée au clavier puis enregistrée) : lecture et WAV';
+  const r = rowInfo(row);
+  if (r.voice) return 'Voix ' + r.voice + ' : sa prise voix';
+  if (r.ti === 0) return 'Batterie : lecture et WAV';
+  if (r.ti === 1) return '808 / Basse : notes du Piano Roll de cette piste (la prise synthé a son propre M)';
+  if (r.ti === 2) return 'Mélodie : notes du Piano Roll (la prise synthé a son propre M ; « Muet » du mixeur coupe tout le canal Mélodie)';
+  if (r.ti !== null) return 'Instrument « ' + ((song.tracks[r.ti] || {}).label || '') + ' » : notes du Piano Roll';
+  if (r.j99 === 'audio') return 'Ligne AUDIO : WAV importés posés sur cette ligne (les voix ont leur propre M)';
+  if (r.j99) return 'Piste audio « ' + r.title + ' » : ses clips';
+  return '';
+ };
+ function sync() {
+  try {
+   srcFor('take').setAttribute('aria-pressed', String(window.J22TakeMuted()));
+   for (const t of laneTracks()) if (t.id === 'audio' || /^aud_/.test(t.id)) srcFor('lane:' + t.id).setAttribute('aria-pressed', String(!!t.mute || (t.id === 'audio' && legacyOn())));
+   // Les libellés d'accessibilité d'origine (« Mute BATTERIE », « Couper la piste AUDIO »…) ne changent pas ; le périmètre est dans l'info-bulle.
+   const am = $('audioMute'); if (am) { const on = srcFor('lane:audio').getAttribute('aria-pressed') === 'true'; am.setAttribute('aria-pressed', String(on)); am.setAttribute('aria-label', (on ? 'Réactiver' : 'Couper') + ' la piste AUDIO'); am.title = 'M · WAV importés de la ligne AUDIO (les voix ont leur propre M)'; }
+   for (const row of document.querySelectorAll('#tlRows>.tl-row')) {
+    const proxy = row.querySelector('.tl-label .dockRowMute'); if (!proxy) continue;
+    const s = rowSourceOf(row);
+    if (s) { proxy.disabled = !!s.disabled; proxy.setAttribute('aria-pressed', s.getAttribute('aria-pressed') || 'false'); }
+    const scope = scopeText(row); if (scope) proxy.title = 'M · ' + scope;
+   }
+  } catch (e) {}
+ }
+ window.J22MuteSync = sync;
+ // Ligne « PRISE SYNTHÉ » : seulement quand une prise existe, juste sous les pistes instruments.
+ function takeRow() {
+  const rows = $('tlRows'); if (!rows) return;
+  let row = rows.querySelector(':scope>.c150TakeRow'); const t = curTake(), show = !!(t && t.notes && t.notes.length);
+  if (!show) { if (row) row.remove(); return; }
+  if (!row) {
+   row = document.createElement('div'); row.className = 'tl-row c150TakeRow';
+   const lab = document.createElement('div'); lab.className = 'tl-label'; const b = document.createElement('b'); b.textContent = 'PRISE SYNTHÉ';
+   const m = document.createElement('button'); m.type = 'button'; m.className = 'dockRowMute c150TakeMute'; m.textContent = 'M'; m.setAttribute('aria-label', 'Mute PRISE SYNTHÉ');
+   m.addEventListener('click', e => { e.stopPropagation(); setTakeMute(!window.J22TakeMuted()); });
+   const lane = document.createElement('div'); lane.className = 'tl-lane c150TakeLane';
+   lab.append(b, m); row.append(lab, lane);
+  }
+  const inst = [...rows.querySelectorAll(':scope>.tl-row')].filter(r => r !== row && r.querySelector('.tl-lane') && r.querySelector('.tl-lane').dataset.ti !== undefined).pop();
+  if (inst) { if (inst.nextElementSibling !== row) inst.after(row); } else if (!row.parentElement) rows.prepend(row);
+  const w = rows.querySelector('.tl-lane:not(.c150TakeLane)')?.style.width; if (w) row.querySelector('.tl-lane').style.width = w;
+ }
+ const b0 = tlBuild; tlBuild = function () { const r = b0.apply(this, arguments); try { takeRow(); sync(); } catch (e) {} return r; };
+ document.addEventListener('click', () => setTimeout(sync, 0), true);
+ // Les boutons M des lignes sont recréés par d'autres modules juste après chaque dessin : on repasse derrière eux.
+ { const tlr = $('tlRows'); if (tlr) new MutationObserver(() => setTimeout(sync, 0)).observe(tlr, { childList: true }); }
+ setInterval(() => { if (!document.hidden) { try { takeRow(); sync(); } catch (e) {} } }, 700);
+
+ /* ---------- 6. Touches du clavier allumées aussi par un clavier MIDI (couleur au hasard, bloc c149) ---------- */
+ function midiLight(v, oct, idx, on) {
+  const P = window.JACK22_PIANO; if (!P || !P.light) return;
+  if (on) { v.j22midi = (oct + 1) * 12 + idx; v.j22lit = true; P.light(v.j22midi, true); }
+  else if (v.j22lit) { v.j22lit = false; P.light(v.j22midi, false); }
+ }
+
+ /* ---------- 7. Grand Piano Roll : libellé du bouton du bas mis à jour tout de suite ---------- */
+ const bigLabel = () => { const b = $('c119Big'); if (!b) return; const on = document.body.classList.contains('c118Big'); const want = on ? '⤡ Afficher le clavier' : '⤢ Grand Piano Roll'; if (b.textContent !== want) b.textContent = want; b.setAttribute('aria-pressed', String(on)); };
+ new MutationObserver(bigLabel).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+ /* ---------- 8. Réglages du synthé : les harmoniques du 808 (curseur, valeur du projet, défaut 50 %) ---------- */
+ (function synthSettings() {
+  const tb = document.querySelector('#synth .dockSynthToolbar'), harm = $('harmAmt'); if (!tb || !harm) return;
+  const det = document.createElement('details'); det.className = 'c150Synth'; det.id = 'c150SynthOpts';
+  det.innerHTML = '<summary>Synthé ▾</summary><div class="c150SynthBody"><label class="c150Row" for="c150Harm"><span>Harmoniques 808</span><input id="c150Harm" type="range" min="0" max="100" step="1" aria-label="Harmoniques du 808"><output id="c150HarmVal" for="c150Harm"></output></label><button type="button" id="c150HarmDef">Valeur par défaut (50 %)</button><p class="c150Hint">Pour le son 808 : les harmoniques aident à entendre la basse sur de petits haut-parleurs (ordinateur, téléphone). Le grave lui-même ne change pas. 0 % = 808 pur. La valeur est enregistrée avec le projet.</p></div>';
+  tb.append(det);
+  const sl = $('c150Harm'), out = $('c150HarmVal');
+  const show = () => { if (document.activeElement !== sl) sl.value = harm.value; out.value = harm.value + ' %'; };
+  const send = v => { harm.value = String(v); harm.dispatchEvent(new Event('input', { bubbles: true })); harm.dispatchEvent(new Event('change', { bubbles: true })); show(); };
+  sl.addEventListener('input', () => send(sl.value));
+  $('c150HarmDef').addEventListener('click', () => send(50));
+  harm.addEventListener('input', show); harm.addEventListener('change', show);
+  const body = det.querySelector('.c150SynthBody'), sum = det.querySelector('summary');
+  const place = () => { if (!det.open) return; const r = sum.getBoundingClientRect(), w = 290, left = Math.max(8, Math.min(r.left, innerWidth - w - 8)); body.style.left = left + 'px'; const h = body.offsetHeight || 150; if (r.top - h - 6 >= 8) { body.style.top = (r.top - h - 6) + 'px'; } else { body.style.top = Math.min(innerHeight - h - 8, r.bottom + 6) + 'px'; } };
+  det.addEventListener('toggle', () => { show(); place(); requestAnimationFrame(place); });
+  addEventListener('resize', place); addEventListener('scroll', place, true);
+  document.addEventListener('pointerdown', e => { if (det.open && !det.contains(e.target)) det.open = false; }, true);
+  show();
+  setInterval(() => { if (!document.hidden && det.open) { show(); place(); } }, 500);
+ })();
+
+ /* ---------- 9. Export MIDI : jamais deux notes de même hauteur qui se chevauchent ----------
+    Règle : une nouvelle note sur une touche déjà tenue termine la précédente au même instant (aucune coupure de la nouvelle
+    note par le « Note Off » de l'ancienne) ; deux notes qui commencent ensemble → on garde la plus longue.
+    Sans chevauchement, le fichier est identique octet pour octet à celui de la 7.8. */
+ function noOverlap(input) {
+  const off = n => { try { return (window.J22Off ? window.J22Off(n) : 0) || 0; } catch (e) { return 0; } };
+  const list = [...input].map((n, i) => ({ n: { ...n }, i, s: n.start + off(n) })), byP = new Map(), drop = new Set();
+  for (const x of list) { const p = (x.n.octave + 1) * 12 + x.n.idx; if (!byP.has(p)) byP.set(p, []); byP.get(p).push(x); }
+  for (const arr of byP.values()) {
+   arr.sort((a, b) => a.s - b.s || b.n.dur - a.n.dur || a.i - b.i);
+   let cur = null;
+   for (const x of arr) {
+    if (cur && x.s < cur.s + cur.n.dur - 1e-9) { if (x.s <= cur.s + 1e-9) { drop.add(x.i); continue; } cur.n.dur = x.s - cur.s; }
+    cur = x;
+   }
+  }
+  return list.filter(x => !drop.has(x.i)).map(x => x.n);
+ }
+ const MX = window.J97Music;
+ if (MX && typeof MX.midi === 'function' && !MX.__c150) { MX.__c150 = true; const m0 = MX.midi; MX.midi = function (input, bpm) { return m0.call(this, noOverlap(input || []), bpm); }; }
+
+ setTimeout(() => { try { takeRow(); sync(); } catch (e) {} }, 800);
+ window.JACK22_MUTE150 = { version: '11.5-claude-7.9-mute-midi', setTakeMute, toggleLane, sync, scopeText, noOverlap, killWhere, get takeMuted() { return window.J22TakeMuted(); } };
 })();</script>

@@ -1,0 +1,293 @@
+--- JACK22-STUDIO-11.5-CLAUDE-7-8-CLAVIER.html
++++ JACK22-STUDIO-11.5-CLAUDE-7-9-MUTE-MIDI.html
+@@ -1,1 +1,1 @@
+-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="jack22-build" content="JACK22-11.5-CLAUDE-7.8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JACK22 STUDIO - 11.5 + Claude (packs, afro, maquettes) - Patterns et prises voix</title><style>
++<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="jack22-build" content="JACK22-11.5-CLAUDE-7.9"><meta name="viewport" content="width=device-width,initial-scale=1"><title>JACK22 STUDIO - 11.5 + Claude (packs, afro, maquettes) - Patterns et prises voix</title><style>
+@@ -1116,1 +1116,1 @@
+-    const mute = btn('Mute', () => { tr.mute = !tr.mute; if (tr.mute && ti > 0) killMelody(); buildPatternUI(); uiExp(); });
++    const mute = btn('Mute', () => { const was = tr.mute || !!(window.J22ChannelMuted && window.J22ChannelMuted(tr.key)); tr.mute = !was; if (window.J22SyncChannel) window.J22SyncChannel(tr.key, tr.mute); if (tr.mute && ti > 0) { if (window.J22KillTrack) window.J22KillTrack(tr.key); else killMelody(); } buildPatternUI(); uiExp(); if (window.J22MuteSync) window.J22MuteSync(); });
+@@ -1117,1 +1117,1 @@
+-    mute.className = 'mute'; mute.dataset.trackKey = tr.key; mute.title = 'Mute · ' + tr.label; mute.setAttribute('aria-pressed', String(tr.mute)); mute.setAttribute('aria-label', (tr.mute ? 'Réactiver la piste ' : 'Couper la piste ') + tr.label);
++    const shownMute = tr.mute || !!(window.J22ChannelMuted && window.J22ChannelMuted(tr.key)); mute.className = 'mute'; mute.dataset.trackKey = tr.key; mute.title = 'Mute · ' + tr.label; mute.setAttribute('aria-pressed', String(shownMute)); mute.setAttribute('aria-label', (shownMute ? 'Réactiver la piste ' : 'Couper la piste ') + tr.label);
+@@ -1202,1 +1202,1 @@
+-const audioGain = () => audioMute ? 0 : volumeToGain(audioLevel);
++const audioGain = c => (audioMute || (c && window.J22LaneMuted && window.J22LaneMuted(c))) ? 0 : volumeToGain(audioLevel);
+@@ -1244,1 +1244,1 @@
+-  src.buffer = window.l3ReadBuffer ? window.l3ReadBuffer(c) : c.buffer; g.gain.value = audioGain() * clipGainV(c); const ed = window.J22ClipEdit ? window.J22ClipEdit(c) : null, env = audio.createGain(); src.connect(env); env.connect(g); r.env = env; if(c.voice){r.meter=audio.createAnalyser();r.meter.fftSize=1024;g.connect(r.meter);r.meter.connect(window.J97AudioNode?window.J97AudioNode(audio,c,bus):bus);}else g.connect(window.J97AudioNode?window.J97AudioNode(audio,c,bus):bus);
++  src.buffer = window.l3ReadBuffer ? window.l3ReadBuffer(c) : c.buffer; g.gain.value = audioGain(c) * clipGainV(c); const ed = window.J22ClipEdit ? window.J22ClipEdit(c) : null, env = audio.createGain(); src.connect(env); env.connect(g); r.env = env; if(c.voice){r.meter=audio.createAnalyser();r.meter.fftSize=1024;g.connect(r.meter);r.meter.connect(window.J97AudioNode?window.J97AudioNode(audio,c,bus):bus);}else g.connect(window.J97AudioNode?window.J97AudioNode(audio,c,bus):bus);
+@@ -1262,1 +1262,1 @@
+-function audioApplyGain() { if (audio) audioPlaying.forEach(a => a.g.gain.setTargetAtTime(audioGain() * clipGainV(a.c), audio.currentTime, 0.015)); }
++function audioApplyGain() { if (audio) audioPlaying.forEach(a => a.g.gain.setTargetAtTime(audioGain(a.c) * clipGainV(a.c), audio.currentTime, 0.015)); }
+@@ -2729,1 +2729,1 @@
+-  if (take && $('recWith').checked) {
++  if (take && $('recWith').checked && !(window.J22TakeMuted && window.J22TakeMuted())) {
+@@ -2772,1 +2772,1 @@
+-  return { bpm: getBpm(), stepLen: 60 / getBpm() / 4, pattern: song.tracks[0].mute ? names.map(() => Array(STEPS).fill(false)) : activePat(0).grid.map(r => r.slice()), take: take ? JSON.parse(JSON.stringify(take)) : null,
++  return { bpm: getBpm(), stepLen: 60 / getBpm() / 4, pattern: song.tracks[0].mute ? names.map(() => Array(STEPS).fill(false)) : activePat(0).grid.map(r => r.slice()), take: take && !(window.J22TakeMuted && window.J22TakeMuted()) ? JSON.parse(JSON.stringify(take)) : null,
+@@ -3594,1 +3594,1 @@
+-function diagnostics(){return {build:'JACK22-11.5-CLAUDE-7.8',time:new Date().toISOString(),available:{microAPI:!!navigator.mediaDevices?.getUserMedia,audioWorklet:typeof AudioWorkletNode!=='undefined',offlineRenderer:typeof OfflineAudioContext!=='undefined',storage:typeof indexedDB!=='undefined'},state:{clips:audioClips.length,voices:audioClips.filter(c=>c.voice).length,sourceSeconds:audioClips.reduce((n,c)=>n+c.duration,0),prepared:window.l3Ready(),dirty:ProjectPersistence.isDirty()},validation:{realBrowserTests:false,meaning:'Capacités détectées et état courant, pas une certification de fonctionnement.'}};}
++function diagnostics(){return {build:'JACK22-11.5-CLAUDE-7.9',time:new Date().toISOString(),available:{microAPI:!!navigator.mediaDevices?.getUserMedia,audioWorklet:typeof AudioWorkletNode!=='undefined',offlineRenderer:typeof OfflineAudioContext!=='undefined',storage:typeof indexedDB!=='undefined'},state:{clips:audioClips.length,voices:audioClips.filter(c=>c.voice).length,sourceSeconds:audioClips.reduce((n,c)=>n+c.duration,0),prepared:window.l3Ready(),dirty:ProjectPersistence.isDirty()},validation:{realBrowserTests:false,meaning:'Capacités détectées et état courant, pas une certification de fonctionnement.'}};}
+@@ -3785,1 +3785,1 @@
+-    if(slot)return original(slot,'mute');
++    {const hook=window.J22RowSource&&window.J22RowSource(row);if(hook)return hook;}if(slot)return original(slot,'mute');
+@@ -3786,1 +3786,1 @@
+-    if(ti!==undefined)return document.querySelector('.mute[data-track-key="'+['drums','bass','melody'][Number(ti)]+'"]');
++    if(ti!==undefined)return document.querySelector('.mute[data-track-key="'+((typeof song!=='undefined'&&song.tracks[Number(ti)])||{}).key+'"]');
+@@ -3856,1 +3856,1 @@
+- function rowSource(row){const lane=row.querySelector('.tl-lane'),name=row.querySelector('b')?.textContent||'',match=name.match(/^VOIX\s+(\d)/);if(match)return $('cVoice'+match[1])?.querySelector('[data-action="mute"]');if(lane?.dataset.ti!==undefined)return document.querySelector('.mute[data-track-key="'+['drums','bass','melody'][Number(lane.dataset.ti)]+'"]');return $('audioMute');}
++ function rowSource(row){{const hook=window.J22RowSource&&window.J22RowSource(row);if(hook)return hook;}const lane=row.querySelector('.tl-lane'),name=row.querySelector('b')?.textContent||'',match=name.match(/^VOIX\s+(\d)/);if(match)return $('cVoice'+match[1])?.querySelector('[data-action="mute"]');if(lane?.dataset.ti!==undefined)return document.querySelector('.mute[data-track-key="'+((typeof song!=='undefined'&&song.tracks[Number(lane.dataset.ti)])||{}).key+'"]');return $('audioMute');}
+@@ -4822,1 +4822,1 @@
+- if(tab==='mix'){const r=row();for(const [key,name]of [['instruments','Groupe instruments'],['voices','Groupe audio / voix']]){const n=label(name+' (%)','number',config.groups[key].level,0,150,r);button('Appliquer '+name,()=>remember(()=>{const v=Number(n.value);if(!Number.isFinite(v)||v<0||v>150)throw Error('Niveau invalide.');config.groups[key].level=v;say('Appliqué à la prochaine lecture et au WAV.');}),r);}const grid=document.createElement('div');grid.className='j97Mixer';body.append(grid);for(const tr of [...song.tracks,{key:'voices',label:'Voix'},{key:'imports',label:'Audio importé'}]){const c=channel(tr.key),card=document.createElement('div');card.className='j97Card';grid.append(card);const h=document.createElement('h3');h.textContent=tr.label;card.append(h);const level=label('Volume %','number',c.level,0,150,card),pan=label('Panoramique','number',c.pan,-1,1,card),low=label('Graves dB','number',c.low,-12,12,card),send=label('Réverb commune %','number',c.send,0,100,card),duck=label('Ducking kick %','number',c.duck,0,100,card);const mute=label('Muet','checkbox','',undefined,undefined,card),solo=label('Solo','checkbox','',undefined,undefined,card),comp=label('Compression','checkbox','',undefined,undefined,card);mute.checked=c.mute;solo.checked=c.solo;comp.checked=c.comp;const points=document.createElement('textarea');points.setAttribute('aria-label','Automation volume '+tr.label);points.placeholder='Automation : mesure, pourcentage\n1,100\n5,70';points.value=c.points.map(p=>p.bar+','+p.level).join('\n');card.append(points);button('Appliquer',()=>remember(()=>{const next=copy(config);next.mix[tr.key]={level:Number(level.value),pan:Number(pan.value),low:Number(low.value),send:Number(send.value),duck:Number(duck.value),mute:mute.checked,solo:solo.checked,comp:comp.checked,points:points.value.trim()?points.value.trim().split('\n').map(l=>{const a=l.split(',').map(Number);if(a.length!==2)throw Error('Courbe : mesure, pourcentage.');return{bar:a[0],level:a[1]};}):[]};config=validate(next);say('Canal enregistré : prochaine lecture et export.');}),card);}para('Chaîne fixe : graves → compresseur → panoramique → volume/automation → ducking → groupe. Départ vers une réverb commune. Le ducking suit les coups de kick programmés.');}
++ if(tab==='mix'){const r=row();for(const [key,name]of [['instruments','Groupe instruments'],['voices','Groupe audio / voix']]){const n=label(name+' (%)','number',config.groups[key].level,0,150,r);button('Appliquer '+name,()=>remember(()=>{const v=Number(n.value);if(!Number.isFinite(v)||v<0||v>150)throw Error('Niveau invalide.');config.groups[key].level=v;say('Appliqué à la prochaine lecture et au WAV.');}),r);}const grid=document.createElement('div');grid.className='j97Mixer';body.append(grid);for(const tr of [...song.tracks,{key:'voices',label:'Voix'},{key:'imports',label:'Audio importé'}]){const c=channel(tr.key),card=document.createElement('div');card.className='j97Card';grid.append(card);const h=document.createElement('h3');h.textContent=tr.label;card.append(h);const level=label('Volume %','number',c.level,0,150,card),pan=label('Panoramique','number',c.pan,-1,1,card),low=label('Graves dB','number',c.low,-12,12,card),send=label('Réverb commune %','number',c.send,0,100,card),duck=label('Ducking kick %','number',c.duck,0,100,card);const mute=label('Muet','checkbox','',undefined,undefined,card),solo=label('Solo','checkbox','',undefined,undefined,card),comp=label('Compression','checkbox','',undefined,undefined,card);mute.checked=c.mute||!!(window.J22ShowTrackMute&&window.J22ShowTrackMute(tr));solo.checked=c.solo;comp.checked=c.comp;const points=document.createElement('textarea');points.setAttribute('aria-label','Automation volume '+tr.label);points.placeholder='Automation : mesure, pourcentage\n1,100\n5,70';points.value=c.points.map(p=>p.bar+','+p.level).join('\n');card.append(points);button('Appliquer',()=>remember(()=>{const next=copy(config);next.mix[tr.key]={level:Number(level.value),pan:Number(pan.value),low:Number(low.value),send:Number(send.value),duck:Number(duck.value),mute:mute.checked,solo:solo.checked,comp:comp.checked,points:points.value.trim()?points.value.trim().split('\n').map(l=>{const a=l.split(',').map(Number);if(a.length!==2)throw Error('Courbe : mesure, pourcentage.');return{bar:a[0],level:a[1]};}):[]};config=validate(next);if(window.J22SetTrackMute)window.J22SetTrackMute(tr.key,mute.checked);say('Canal enregistré : prochaine lecture et export.');}),card);}para('Chaîne fixe : graves → compresseur → panoramique → volume/automation → ducking → groupe. Départ vers une réverb commune. Le ducking suit les coups de kick programmés.');}
+@@ -4829,1 +4829,1 @@
+-async function connectMIDI(){if(!navigator.requestMIDIAccess)throw Error('Web MIDI indisponible dans ce navigateur.');midiAccess=await navigator.requestMIDIAccess({sysex:false});function attach(){for(const input of midiAccess.inputs.values())input.onmidimessage=receiveMIDI;}attach();midiAccess.onstatechange=attach;return midiAccess;}
++function releaseInput(id){const key=String(id||'').replace(/[^A-Za-z0-9_.:-]/g,'_');let n=0;for(const [k,v] of [...midiHeld]){if(k.startsWith('midi97-'+key+'-')){midiHeld.delete(k);if(!midiRecording&&v&&v.state&&engine)engine.releaseVoice(v);n++;}}return n;}async function connectMIDI(){if(!navigator.requestMIDIAccess)throw Error('Web MIDI indisponible dans ce navigateur.');midiAccess=await navigator.requestMIDIAccess({sysex:false});function attach(){for(const input of midiAccess.inputs.values())input.onmidimessage=receiveMIDI;}attach();midiAccess.onstatechange=e=>{attach();const p=e&&e.port;if(p&&p.type==='input'&&p.state==='disconnected')releaseInput(p.id);};return midiAccess;}
+@@ -4830,1 +4830,1 @@
+-function receiveMIDI(e){const [status,note,vel]=e.data,on=(status&240)===144&&vel>0,off=(status&240)===128||((status&240)===144&&!vel);if(!on&&!off)return;if(dlg.open&&!midiRecording)return;const source='midi97-'+(status&15)+'-'+note;
++function receiveMIDI(e){const [status,note,vel]=e.data,on=(status&240)===144&&vel>0,off=(status&240)===128||((status&240)===144&&!vel);if(!on&&!off)return;if(on&&dlg.open&&!midiRecording)return;const port=String((e.target&&e.target.id)||(e.currentTarget&&e.currentTarget.id)||'').replace(/[^A-Za-z0-9_.:-]/g,'_'),source='midi97-'+port+'-'+(status&15)+'-'+note;
+@@ -4836,1 +4836,1 @@
+-window.JACK22_PRODUCTION={version:'9.7-candidate',open,addTrack,removeTrack,syncTrackOptions,music,validate,get config(){return copy(config)},stems,newAudio,receiveMIDI};
++window.JACK22_PRODUCTION={version:'9.7-candidate',open,addTrack,removeTrack,syncTrackOptions,music,validate,get config(){return copy(config)},stems,newAudio,receiveMIDI,releaseInput,setChannelMute:(k,on)=>{const c=config.mix[k];if(!c)return false;c.mute=!!on;return true;}};
+@@ -4970,1 +4970,1 @@
+-window.JACK22_AUDIO_EDIT={startStep,seconds,place:(id,at,lane)=>change(()=>place(audioClips.find(c=>c.id===id),at,lane)),addTrack,splitClip,crossfade,duplicate,open,validate,get settings(){return copy(settings)}};Object.defineProperties(window.JACK22_AUDIO_EDIT,Object.getOwnPropertyDescriptors(C128API()));
++window.JACK22_AUDIO_EDIT={startStep,seconds,place:(id,at,lane)=>change(()=>place(audioClips.find(c=>c.id===id),at,lane)),addTrack,splitClip,crossfade,duplicate,open,validate,setTrack:(id,props)=>{const t=settings.tracks.find(x=>x.id===id);if(!t)throw Error('Piste introuvable.');for(const k of ['mute','solo'])if(props&&k in props)t[k]=!!props[k];try{tlBuild();}catch(e){}return true;},get settings(){return copy(settings)}};Object.defineProperties(window.JACK22_AUDIO_EDIT,Object.getOwnPropertyDescriptors(C128API()));
+@@ -9637,1 +9637,1 @@
+- const pick = () => { n++; const h = Math.floor(Math.random() * 360); return 'hsl(' + h + ' 90% 60%)'; };
++ const pick = k => { n++; const last = k && k.dataset.c149h !== undefined ? Number(k.dataset.c149h) : NaN; let h = 0, tries = 0; do { h = Math.floor(Math.random() * 360); tries++; } while (Number.isFinite(last) && Math.min(Math.abs(h - last), 360 - Math.abs(h - last)) < 60 && tries < 50); if (k) k.dataset.c149h = String(h); return 'hsl(' + h + ' 90% 60%)'; };
+@@ -9642,1 +9642,1 @@
+-   if (!k.dataset.c149) k.dataset.c149 = pick();
++   if (!k.dataset.c149) k.dataset.c149 = pick(k);
+@@ -9648,0 +9649,233 @@
++<style id="c150Style">
++/* 7.9 — audit « Mute, MIDI et démarrage audio ». Le son des projets ne change pas tant qu'on ne touche à rien. */
++/* Ligne « PRISE SYNTHÉ » de l'arrangement (seulement quand une prise existe) : même aspect que les autres lignes. */
++#tlRows .c150TakeRow .tl-lane{pointer-events:none}
++html body #tlRows#tlRows .tl-row.c150TakeRow .tl-label>b{font-size:10px!important;letter-spacing:0!important}
++/* Grand Piano Roll : clavier replié → la grille prend toute la hauteur libérée, aussi en fenêtre étroite (≤ 950 px). */
++html body.j93Workspace.c118Big #dockStage#dockStage.j108Notes>#roll#roll{flex:1 1 auto!important;height:auto!important;max-height:none!important;min-height:0!important;align-self:stretch!important}
++/* Réglages du synthé (le réglage des harmoniques du 808 revient ici ; un seul bouton rond reste sur le clavier). */
++#synth details.c150Synth{position:relative;display:inline-block;margin-left:6px}
++#synth details.c150Synth>summary{list-style:none;cursor:pointer;height:28px;display:inline-flex;align-items:center;padding:0 10px;border-radius:6px;border:1px solid #3a3d43;background:#1d2024;color:#eceef1;font:600 12px/1 system-ui,"Segoe UI",sans-serif;white-space:nowrap}
++#synth details.c150Synth>summary::-webkit-details-marker{display:none}
++#synth details.c150Synth[open]>summary{border-color:#d6343b}
++/* Le panneau du clavier masque ce qui dépasse : le menu est donc placé par rapport à la fenêtre, au-dessus du bouton. */
++#synth .c150SynthBody{position:fixed;z-index:200;width:290px;padding:12px;border-radius:8px;border:1px solid #3a3d43;background:#15171a;box-shadow:0 10px 26px rgba(0,0,0,.55);color:#e6e6e6;font:500 12.5px/1.4 system-ui,"Segoe UI",sans-serif}
++#synth .c150Row{display:flex;align-items:center;gap:10px;margin:0 0 8px}
++#synth .c150Row span{flex:0 0 auto;color:#cfd2d6}
++#synth .c150Row input[type=range]{flex:1 1 auto;accent-color:#d6343b;min-width:0}
++#synth .c150Row output{flex:0 0 40px;text-align:right;font:600 12px/1 ui-monospace,Consolas,monospace;color:#f1eded}
++#synth .c150SynthBody button{height:28px;padding:0 10px;border-radius:6px;border:1px solid #3a3d43;background:#1d2024;color:#eceef1;font:600 12px/1 system-ui,"Segoe UI",sans-serif;cursor:pointer}
++#synth .c150Hint{margin:8px 0 0;color:#a9aeb6;font-size:11.5px}
++</style>
++<script id="c150Script">(() => {
++ 'use strict';
++ const $ = id => document.getElementById(id);
++ const A = () => window.JACK22_AUDIO_EDIT;
++
++ /* ---------- 1. Chaque voix sait de quelle piste et de quelle source elle vient ----------
++    Piano Roll (« roll ») : notes programmées d'une piste ; prise synthé (« take ») ; clavier (« live »). Un Mute de piste ne coupe
++    que les voix « roll » de cette piste : les autres pistes continuent, le transport ne bouge pas, les notes suivantes repartent
++    à leur place à la réactivation (le programmateur, lui, n'est jamais arrêté). */
++ let src = null;
++ const tagV = (v, opts, s) => { if (v && typeof v === 'object') { v.j22src = s; v.j22key = opts && opts.trackKey; } };
++ const wrapEngine = E => {
++  if (!E || E.__c150) return E; E.__c150 = true;
++  const sn = E.scheduleNote, sv = E.startVoice, rv = E.releaseVoice, kv = E.killVoice;
++  if (typeof sv === 'function') E.startVoice = function (source, presetKey, oct, idx, t, opts) {
++   const v = sv.apply(this, arguments);
++   try { if (v && typeof v === 'object') { tagV(v, opts, src || 'live'); if (typeof source === 'string' && source.startsWith('midi97-')) midiLight(v, oct, idx, true); } } catch (e) {}
++   return v;
++  };
++  if (typeof sn === 'function') E.scheduleNote = function (presetKey, oct, idx, t0, t1, opts) { const v = sn.apply(this, arguments); try { tagV(v, opts, src || 'other'); } catch (e) {} return v; };
++  if (typeof rv === 'function') E.releaseVoice = function (v) { try { if (v && v.j22midi != null) midiLight(v, 0, 0, false); } catch (e) {} return rv.apply(this, arguments); };
++  if (typeof kv === 'function') E.killVoice = function (v) { try { if (v && v.j22midi != null) midiLight(v, 0, 0, false); } catch (e) {} return kv.apply(this, arguments); };
++  return E;
++ };
++ const ce0 = createEngine; createEngine = function () { return wrapEngine(ce0.apply(this, arguments)); };
++ try { if (typeof engine !== 'undefined' && engine) wrapEngine(engine); } catch (e) {}
++ const rs0 = rollSchedule; rollSchedule = function () { const p = src; src = 'roll'; try { return rs0.apply(this, arguments); } finally { src = p; } };
++ const rc0 = recSchedule; recSchedule = function () { const p = src; src = 'take'; try { return rc0.apply(this, arguments); } finally { src = p; } };
++ const killWhere = pred => {
++  let n = 0;
++  try { if (typeof engine === 'undefined' || !engine) return 0; for (let i = melodyVoices.length - 1; i >= 0; i--) { const v = melodyVoices[i]; if (v && pred(v)) { try { engine.killVoice(v); } catch (e) {} melodyVoices.splice(i, 1); n++; } } } catch (e) {}
++  return n;
++ };
++ window.J22KillTrack = key => killWhere(v => v.j22src === 'roll' && v.j22key === key);
++
++ /* ---------- 2. Prise synthé : son propre Mute (lecture et WAV), enregistré avec le projet ---------- */
++ let takeMute = false, takeSig = null, sigRef = null, sigVal = null;
++ const curTake = () => { try { return take; } catch (e) { return null; } };
++ const sigOf = t => { if (!t) return null; if (t === sigRef) return sigVal; sigRef = t; sigVal = (t.steps || 0) + '|' + (t.notes || []).map(n => [n.start, n.dur, n.octave, n.idx].join(',')).join(';'); return sigVal; };
++ // Le Mute suit LA prise coupée : une nouvelle prise enregistrée repart non coupée.
++ window.J22TakeMuted = () => { const t = curTake(); return !!t && takeMute && sigOf(t) === takeSig; };
++ const setTakeMute = on => { const t = curTake(); if (!t) return false; takeMute = !!on; takeSig = sigOf(t); if (on) killWhere(v => v.j22src === 'take'); sync(); return true; };
++ const cap0 = VoiceStore.capture, par0 = VoiceStore.parse, set0 = VoiceStore.setText;
++ VoiceStore.capture = function () { const v = cap0.apply(this, arguments); try { if (v && window.J22TakeMuted()) v.mute150 = { version: 1, take: true, sig: takeSig }; } catch (e) {} return v; };
++ VoiceStore.parse = function (b) {
++  const r = par0.apply(this, arguments); if (!r) return r;
++  if (b && b.mute150 !== undefined) { const m = b.mute150; if (!m || m.version !== 1 || typeof m.take !== 'boolean' || (m.sig != null && (typeof m.sig !== 'string' || m.sig.length > 500000))) return false; return { ...r, mute150: { version: 1, take: m.take, sig: m.sig == null ? null : m.sig } }; }
++  return r;
++ };
++ VoiceStore.setText = function (v) { const r = set0.apply(this, arguments); const m = v && v.mute150; takeMute = !!(m && m.take); takeSig = (m && m.sig) || null; try { sync(); } catch (e) {} return r; };
++
++ /* ---------- 3. Pistes audio : chaque ligne coupe SES clips ----------
++    AUDIO → les WAV de la ligne AUDIO (plus les voix) ; « Piste audio n » → ses clips ; VOIX n → sa prise voix (inchangé).
++    L'ancienne coupure globale « AUDIO » d'un projet déjà enregistré reste respectée jusqu'au premier clic. */
++ let laneCache = null, laneT = 0;
++ const laneTracks = () => { const now = performance.now(); if (!laneCache || now - laneT > 150) { try { laneCache = (A() && A().settings && A().settings.tracks) || []; } catch (e) { laneCache = []; } laneT = now; } return laneCache; };
++ const legacyOn = () => { try { return !!audioMute; } catch (e) { return false; } };
++ window.J22LaneMuted = c => {
++  try { const id = A() && A().lane(c.id); if (!id) return false; const ts = laneTracks(), t = ts.find(x => x.id === id); if (!t) return false; const solo = ts.some(x => x.solo); return !!(t.mute || (solo && !t.solo)); } catch (e) { return false; }
++ };
++ const toggleLane = id => {
++  const t = laneTracks().find(x => x.id === id); if (!t) return false;
++  if (id === 'audio' && legacyOn()) { audioMute = false; try { syncAudioUi(); } catch (e) {} try { tlBuild(); } catch (e) {} }
++  else A().setTrack(id, { mute: !t.mute });
++  laneCache = null; try { audioApplyGain(); } catch (e) {} sync(); return true;
++ };
++ const host = document.createElement('div'); host.id = 'c150Sources'; host.hidden = true; document.body.append(host);
++ const srcFor = key => {
++  let b = host.querySelector('[data-c150-src="' + key + '"]');
++  if (!b) { b = document.createElement('button'); b.type = 'button'; b.dataset.c150Src = key; b.setAttribute('aria-pressed', 'false'); b.addEventListener('click', () => { if (key === 'take') setTakeMute(!window.J22TakeMuted()); else toggleLane(key.slice(5)); }); host.append(b); }
++  return b;
++ };
++ window.J22RowSource = row => {
++  if (!row || !row.classList) return null;
++  if (row.classList.contains('c150TakeRow')) return srcFor('take');
++  const lane = row.querySelector('.tl-lane'), id = lane && lane.dataset && lane.dataset.j99Lane;
++  if (id === 'audio' || (id && /^aud_/.test(id))) return srcFor('lane:' + id);
++  return null;
++ };
++ // Le petit « M » de la barre AUDIO (ancien bouton global) fait désormais la même chose que le M de la ligne AUDIO.
++ $('audioMute')?.addEventListener('click', e => { e.stopImmediatePropagation(); e.preventDefault(); toggleLane('audio'); }, true);
++
++ /* ---------- 4. Un seul état par piste instrument : arrangement, panneau Patterns et mixeur de la Production ----------
++    Exception : le canal « Mélodie » du mixeur porte aussi la prise synthé ; son M d'arrangement ne coupe donc que le Piano Roll
++    (la case « Muet » du mixeur, elle, coupe tout le canal, prise comprise). */
++ const linked = key => key !== 'melody';
++ window.J22ChannelMuted = key => { if (!linked(key)) return false; try { const c = window.JACK22_PRODUCTION && window.JACK22_PRODUCTION.config.mix[key]; return !!(c && c.mute); } catch (e) { return false; } };
++ window.J22SyncChannel = (key, on) => { if (!linked(key)) return; try { window.JACK22_PRODUCTION.setChannelMute && window.JACK22_PRODUCTION.setChannelMute(key, on); } catch (e) {} };
++ window.J22ShowTrackMute = tr => !!(tr && tr.mute && linked(tr.key));
++ window.J22SetTrackMute = (key, on) => {
++  if (!linked(key)) return;
++  try { const ti = song.tracks.findIndex(t => t.key === key); if (ti < 0) return; const tr = song.tracks[ti]; if (!!tr.mute === !!on) { sync(); return; } tr.mute = !!on; if (on && ti > 0) window.J22KillTrack(key); buildPatternUI(); uiExp(); sync(); } catch (e) {}
++ };
++
++ /* ---------- 5. Boutons M : état toujours à jour et périmètre écrit en clair ---------- */
++ const rowInfo = row => {
++  const lane = row.querySelector('.tl-lane'), title = row.querySelector('.tl-label b')?.textContent || '', voice = title.match(/^VOIX\s+(\d)/);
++  return { lane, title, voice: voice ? Number(voice[1]) : 0, ti: lane && lane.dataset.ti !== undefined ? Number(lane.dataset.ti) : null, j99: lane && lane.dataset.j99Lane };
++ };
++ const rowSourceOf = row => {
++  const hook = window.J22RowSource(row); if (hook) return hook;
++  const r = rowInfo(row);
++  if (r.voice) return $('cVoice' + r.voice)?.querySelector('[data-action="mute"]') || null;
++  if (r.ti !== null) return document.querySelector('.mute[data-track-key="' + ((song.tracks[r.ti] || {}).key) + '"]');
++  return null;
++ };
++ const scopeText = row => {
++  if (row.classList.contains('c150TakeRow')) return 'Prise synthé (jouée au clavier puis enregistrée) : lecture et WAV';
++  const r = rowInfo(row);
++  if (r.voice) return 'Voix ' + r.voice + ' : sa prise voix';
++  if (r.ti === 0) return 'Batterie : lecture et WAV';
++  if (r.ti === 1) return '808 / Basse : notes du Piano Roll de cette piste (la prise synthé a son propre M)';
++  if (r.ti === 2) return 'Mélodie : notes du Piano Roll (la prise synthé a son propre M ; « Muet » du mixeur coupe tout le canal Mélodie)';
++  if (r.ti !== null) return 'Instrument « ' + ((song.tracks[r.ti] || {}).label || '') + ' » : notes du Piano Roll';
++  if (r.j99 === 'audio') return 'Ligne AUDIO : WAV importés posés sur cette ligne (les voix ont leur propre M)';
++  if (r.j99) return 'Piste audio « ' + r.title + ' » : ses clips';
++  return '';
++ };
++ function sync() {
++  try {
++   srcFor('take').setAttribute('aria-pressed', String(window.J22TakeMuted()));
++   for (const t of laneTracks()) if (t.id === 'audio' || /^aud_/.test(t.id)) srcFor('lane:' + t.id).setAttribute('aria-pressed', String(!!t.mute || (t.id === 'audio' && legacyOn())));
++   // Les libellés d'accessibilité d'origine (« Mute BATTERIE », « Couper la piste AUDIO »…) ne changent pas ; le périmètre est dans l'info-bulle.
++   const am = $('audioMute'); if (am) { const on = srcFor('lane:audio').getAttribute('aria-pressed') === 'true'; am.setAttribute('aria-pressed', String(on)); am.setAttribute('aria-label', (on ? 'Réactiver' : 'Couper') + ' la piste AUDIO'); am.title = 'M · WAV importés de la ligne AUDIO (les voix ont leur propre M)'; }
++   for (const row of document.querySelectorAll('#tlRows>.tl-row')) {
++    const proxy = row.querySelector('.tl-label .dockRowMute'); if (!proxy) continue;
++    const s = rowSourceOf(row);
++    if (s) { proxy.disabled = !!s.disabled; proxy.setAttribute('aria-pressed', s.getAttribute('aria-pressed') || 'false'); }
++    const scope = scopeText(row); if (scope) proxy.title = 'M · ' + scope;
++   }
++  } catch (e) {}
++ }
++ window.J22MuteSync = sync;
++ // Ligne « PRISE SYNTHÉ » : seulement quand une prise existe, juste sous les pistes instruments.
++ function takeRow() {
++  const rows = $('tlRows'); if (!rows) return;
++  let row = rows.querySelector(':scope>.c150TakeRow'); const t = curTake(), show = !!(t && t.notes && t.notes.length);
++  if (!show) { if (row) row.remove(); return; }
++  if (!row) {
++   row = document.createElement('div'); row.className = 'tl-row c150TakeRow';
++   const lab = document.createElement('div'); lab.className = 'tl-label'; const b = document.createElement('b'); b.textContent = 'PRISE SYNTHÉ';
++   const m = document.createElement('button'); m.type = 'button'; m.className = 'dockRowMute c150TakeMute'; m.textContent = 'M'; m.setAttribute('aria-label', 'Mute PRISE SYNTHÉ');
++   m.addEventListener('click', e => { e.stopPropagation(); setTakeMute(!window.J22TakeMuted()); });
++   const lane = document.createElement('div'); lane.className = 'tl-lane c150TakeLane';
++   lab.append(b, m); row.append(lab, lane);
++  }
++  const inst = [...rows.querySelectorAll(':scope>.tl-row')].filter(r => r !== row && r.querySelector('.tl-lane') && r.querySelector('.tl-lane').dataset.ti !== undefined).pop();
++  if (inst) { if (inst.nextElementSibling !== row) inst.after(row); } else if (!row.parentElement) rows.prepend(row);
++  const w = rows.querySelector('.tl-lane:not(.c150TakeLane)')?.style.width; if (w) row.querySelector('.tl-lane').style.width = w;
++ }
++ const b0 = tlBuild; tlBuild = function () { const r = b0.apply(this, arguments); try { takeRow(); sync(); } catch (e) {} return r; };
++ document.addEventListener('click', () => setTimeout(sync, 0), true);
++ // Les boutons M des lignes sont recréés par d'autres modules juste après chaque dessin : on repasse derrière eux.
++ { const tlr = $('tlRows'); if (tlr) new MutationObserver(() => setTimeout(sync, 0)).observe(tlr, { childList: true }); }
++ setInterval(() => { if (!document.hidden) { try { takeRow(); sync(); } catch (e) {} } }, 700);
++
++ /* ---------- 6. Touches du clavier allumées aussi par un clavier MIDI (couleur au hasard, bloc c149) ---------- */
++ function midiLight(v, oct, idx, on) {
++  const P = window.JACK22_PIANO; if (!P || !P.light) return;
++  if (on) { v.j22midi = (oct + 1) * 12 + idx; v.j22lit = true; P.light(v.j22midi, true); }
++  else if (v.j22lit) { v.j22lit = false; P.light(v.j22midi, false); }
++ }
++
++ /* ---------- 7. Grand Piano Roll : libellé du bouton du bas mis à jour tout de suite ---------- */
++ const bigLabel = () => { const b = $('c119Big'); if (!b) return; const on = document.body.classList.contains('c118Big'); const want = on ? '⤡ Afficher le clavier' : '⤢ Grand Piano Roll'; if (b.textContent !== want) b.textContent = want; b.setAttribute('aria-pressed', String(on)); };
++ new MutationObserver(bigLabel).observe(document.body, { attributes: true, attributeFilter: ['class'] });
++
++ /* ---------- 8. Réglages du synthé : les harmoniques du 808 (curseur, valeur du projet, défaut 50 %) ---------- */
++ (function synthSettings() {
++  const tb = document.querySelector('#synth .dockSynthToolbar'), harm = $('harmAmt'); if (!tb || !harm) return;
++  const det = document.createElement('details'); det.className = 'c150Synth'; det.id = 'c150SynthOpts';
++  det.innerHTML = '<summary>Synthé ▾</summary><div class="c150SynthBody"><label class="c150Row" for="c150Harm"><span>Harmoniques 808</span><input id="c150Harm" type="range" min="0" max="100" step="1" aria-label="Harmoniques du 808"><output id="c150HarmVal" for="c150Harm"></output></label><button type="button" id="c150HarmDef">Valeur par défaut (50 %)</button><p class="c150Hint">Pour le son 808 : les harmoniques aident à entendre la basse sur de petits haut-parleurs (ordinateur, téléphone). Le grave lui-même ne change pas. 0 % = 808 pur. La valeur est enregistrée avec le projet.</p></div>';
++  tb.append(det);
++  const sl = $('c150Harm'), out = $('c150HarmVal');
++  const show = () => { if (document.activeElement !== sl) sl.value = harm.value; out.value = harm.value + ' %'; };
++  const send = v => { harm.value = String(v); harm.dispatchEvent(new Event('input', { bubbles: true })); harm.dispatchEvent(new Event('change', { bubbles: true })); show(); };
++  sl.addEventListener('input', () => send(sl.value));
++  $('c150HarmDef').addEventListener('click', () => send(50));
++  harm.addEventListener('input', show); harm.addEventListener('change', show);
++  const body = det.querySelector('.c150SynthBody'), sum = det.querySelector('summary');
++  const place = () => { if (!det.open) return; const r = sum.getBoundingClientRect(), w = 290, left = Math.max(8, Math.min(r.left, innerWidth - w - 8)); body.style.left = left + 'px'; const h = body.offsetHeight || 150; if (r.top - h - 6 >= 8) { body.style.top = (r.top - h - 6) + 'px'; } else { body.style.top = Math.min(innerHeight - h - 8, r.bottom + 6) + 'px'; } };
++  det.addEventListener('toggle', () => { show(); place(); requestAnimationFrame(place); });
++  addEventListener('resize', place); addEventListener('scroll', place, true);
++  document.addEventListener('pointerdown', e => { if (det.open && !det.contains(e.target)) det.open = false; }, true);
++  show();
++  setInterval(() => { if (!document.hidden && det.open) { show(); place(); } }, 500);
++ })();
++
++ /* ---------- 9. Export MIDI : jamais deux notes de même hauteur qui se chevauchent ----------
++    Règle : une nouvelle note sur une touche déjà tenue termine la précédente au même instant (aucune coupure de la nouvelle
++    note par le « Note Off » de l'ancienne) ; deux notes qui commencent ensemble → on garde la plus longue.
++    Sans chevauchement, le fichier est identique octet pour octet à celui de la 7.8. */
++ function noOverlap(input) {
++  const off = n => { try { return (window.J22Off ? window.J22Off(n) : 0) || 0; } catch (e) { return 0; } };
++  const list = [...input].map((n, i) => ({ n: { ...n }, i, s: n.start + off(n) })), byP = new Map(), drop = new Set();
++  for (const x of list) { const p = (x.n.octave + 1) * 12 + x.n.idx; if (!byP.has(p)) byP.set(p, []); byP.get(p).push(x); }
++  for (const arr of byP.values()) {
++   arr.sort((a, b) => a.s - b.s || b.n.dur - a.n.dur || a.i - b.i);
++   let cur = null;
++   for (const x of arr) {
++    if (cur && x.s < cur.s + cur.n.dur - 1e-9) { if (x.s <= cur.s + 1e-9) { drop.add(x.i); continue; } cur.n.dur = x.s - cur.s; }
++    cur = x;
++   }
++  }
++  return list.filter(x => !drop.has(x.i)).map(x => x.n);
++ }
++ const MX = window.J97Music;
++ if (MX && typeof MX.midi === 'function' && !MX.__c150) { MX.__c150 = true; const m0 = MX.midi; MX.midi = function (input, bpm) { return m0.call(this, noOverlap(input || []), bpm); }; }
++
++ setTimeout(() => { try { takeRow(); sync(); } catch (e) {} }, 800);
++ window.JACK22_MUTE150 = { version: '11.5-claude-7.9-mute-midi', setTakeMute, toggleLane, sync, scopeText, noOverlap, killWhere, get takeMuted() { return window.J22TakeMuted(); } };
++})();</script>

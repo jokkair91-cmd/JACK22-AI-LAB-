@@ -170,11 +170,14 @@
     ['10 Synthé Orbite', async () => {
       if (spaces()) { room('Piano Roll'); await sleep(200); }
       for (const b of document.querySelectorAll('[data-dock-preset]')) { b.click(); if ($('preset').value !== b.dataset.dockPreset) throw Error('planète ' + b.textContent); }
-      if (getComputedStyle($('harmCtl')).display === 'none' || !$('harmAmt').offsetParent) throw Error('harmoniques 808 invisibles');
+      // 7.8 : à la demande de Bob, un seul bouton rond dans la barre du clavier ; « HARMONIQUES 808 » est masqué, sa valeur reste.
+      const one = !!window.JACK22_CLAVIER149;
+      if (one) { if (getComputedStyle($('harmCtl')).display !== 'none') throw Error('bouton « HARMONIQUES 808 » encore affiché (7.8 : un seul bouton)'); if (!/^\d+$/.test($('harmAmt').value)) throw Error('valeur des harmoniques perdue'); }
+      else if (getComputedStyle($('harmCtl')).display === 'none' || !$('harmAmt').offsetParent) throw Error('harmoniques 808 invisibles');
       const o = Number($('octVal').textContent); $('octUp').click(); const up = Number($('octVal').textContent); $('octDown').click();
       if (up !== o + 1 || Number($('octVal').textContent) !== o) throw Error('octave');
       $('panic').click(); document.querySelector('[data-dock-preset="lead"]').click();
-      return '5 sons, harmoniques 808 visibles, octave ±';
+      return one ? '5 sons, un seul bouton rond (harmoniques 808 gardées à ' + $('harmAmt').value + ' %), octave ±' : '5 sons, harmoniques 808 visibles, octave ±';
     }],
     ['11 Export WAV', async () => {
       stopAll(); const d = await exportOnce();
@@ -942,6 +945,42 @@
       const r = await M.run(), bad = r.filter(x => !x.ok);
       if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
       return r.map(x => String(x.detail).slice(0, 60)).join(' | ');
+    }],
+    ['47 Pistes séparées par piste audio (7.7, M6)', async () => {
+      if (!window.JACK22_STEMS148) throw new Skip('pas de pistes séparées par piste audio dans cette version');
+      if (!window.JACK22_F4) { for (const u of ['f4-tests.js', 'tests/f4-tests.js', '/f4/f4-tests.js']) { try { const r = await fetch(u); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_F4; if (!M) throw new Skip('f4-tests.js introuvable');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const r = await M.run(), bad = r.filter(x => !x.ok);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return r.map(x => String(x.detail).slice(0, 60)).join(' | ');
+    }],
+    ['48 Clavier du bas : repli, un seul bouton, couleurs (7.8)', async () => {
+      if (!window.JACK22_CLAVIER149) throw new Skip('pas de retouches du clavier dans cette version');
+      if (!window.JACK22_F5) { for (const u of ['f5-tests.js', 'tests/f5-tests.js', '/f5/f5-tests.js']) { try { const r = await fetch(u, { cache: 'no-store' }); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_F5; if (!M) throw new Skip('f5-tests.js introuvable');
+      stopAll(); await sleep(200);
+      const r = await M.run(), bad = r.filter(x => !x.ok);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return r.map(x => String(x.detail).slice(0, 60)).join(' | ');
+    }],
+    ['49 Mute par piste, MIDI, clavier (7.9)', async () => {
+      if (!window.JACK22_MUTE150) throw new Skip('pas de Mute par piste ni de corrections MIDI dans cette version');
+      if (!window.JACK22_F6) { for (const u of ['f6-tests.js', 'tests/f6-tests.js', '/f6/f6-tests.js']) { try { const r = await fetch(u, { cache: 'no-store' }); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_F6; if (!M) throw new Skip('f6-tests.js introuvable');
+      stopAll(); await sleep(200);
+      const r = await M.run(), bad = r.filter(x => x.ok === false), skipped = r.filter(x => x.ok === null);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + x.detail).join(' ; '));
+      return (r.length - skipped.length) + '/' + r.length + ' cas réussis' + (skipped.length ? ' (' + skipped.length + ' « pendant la lecture » non applicables : page cachée ; lancés dans Edge)' : '') + ' | ' + r.filter(x => x.ok).map(x => String(x.detail).slice(0, 50)).join(' | ');
+    }],
+    ['50 Rendus WAV : chaque Mute retire sa source (7.9)', async () => {
+      if (!window.JACK22_MUTE150) throw new Skip('pas de Mute par piste dans cette version');
+      if (!window.JACK22_F6WAV) { for (const u of ['f6-wav.js', 'tests/f6-wav.js', '/f6/f6-wav.js']) { try { const r = await fetch(u, { cache: 'no-store' }); if (r.ok) { (0, eval)(await r.text()); break; } } catch (e) {} } }
+      const M = window.JACK22_F6WAV; if (!M) throw new Skip('f6-wav.js introuvable');
+      stopAll(); await sleep(200); await until(() => !Jack22Lot3.pending && !persistBusy, 180000, 200);
+      const r = await M.run(), bad = r.filter(x => !x.ok);
+      if (bad.length) throw Error(bad.length + '/' + r.length + ' cas en échec : ' + bad.map(x => x.cas.slice(0, 40) + ' → ' + String(x.detail).slice(0, 300)).join(' ; '));
+      return r.map(x => x.cas.replace(/^Rendu WAV, /, '') + ' OK').join(' | ');
     }],
     ['21 Aucune erreur JavaScript', async () => {
       // « ResizeObserver loop… » : simple avis du navigateur (une mise en page refaite à l'image suivante), pas une erreur du studio.
