@@ -1,11 +1,11 @@
-/* JACK22 — tests de la 6.9 (M1 : pistes audio dans l'Arrangement), à charger dans la page du studio.
+/* JACK22 — tests de la 7.4 (pistes audio dans l'Arrangement), à charger dans la page du studio.
    Crée des pistes et importe de petits WAV générés ; tout est retiré à la fin (projet remis comme avant).
-   Usage : JACK22_E3.run().then(r => console.table(r)). */
+   Usage : JACK22_F1.run().then(r => console.table(r)). */
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
   const sleep = ms => new Promise(r => setTimeout(r, ms));
-  const WS = () => window.JACK22_WORKSPACE, A = () => window.JACK22_AUDIO_EDIT, T = () => window.JACK22_TRACKS139;
+  const WS = () => window.JACK22_WORKSPACE, A = () => window.JACK22_AUDIO_EDIT, T = () => window.JACK22_TRACKS145;
   // Petit WAV 16 bits mono (sinus), généré dans la page.
   const wav = (sec, hz, name) => { const sr = 44100, n = Math.round(sec * sr), b = new ArrayBuffer(44 + n * 2), v = new DataView(b), w = (o, s) => [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
     w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
@@ -17,7 +17,7 @@
   const cases = [
     ['« ＋ Piste audio » dans l’Arrangement', async () => {
       WS().choose('compose', 'arrange'); await sleep(400);
-      const ui = $('c139Tools'); if (!ui || !ui.offsetWidth) throw Error('outils de piste absents de l’Arrangement');
+      const ui = $('c145Tools'); if (!ui || !ui.offsetWidth) throw Error('outils de piste absents de l’Arrangement');
       const n0 = T().tracks().length; ui.querySelector('button').click(); await sleep(300);
       const ts = T().tracks(); if (ts.length !== n0 + 1) throw Error('piste non créée');
       const t = ts.at(-1); made.push(t.id);
@@ -36,7 +36,7 @@
       return '« test-m1.wav » (1,5 s) arrivé sur la piste choisie, avec sa forme d’onde';
     }],
     ['32 pistes au maximum, avec message', async () => {
-      const ui = $('c139Tools'), add = ui.querySelector('button'); let guard = 40;
+      const ui = $('c145Tools'), add = ui.querySelector('button'); let guard = 40;
       while (T().tracks().length < 32 && guard--) { add.click(); made.push(T().tracks().at(-1).id); await sleep(20); }
       if (T().tracks().length !== 32) throw Error(T().tracks().length + ' pistes au lieu de 32');
       if (!add.disabled) throw Error('bouton encore actif à 32 pistes');
@@ -84,5 +84,5 @@
     }
     return out;
   }
-  window.JACK22_E3 = { run, cases: cases.map(c => c[0]) };
+  window.JACK22_F1 = { run, cases: cases.map(c => c[0]) };
 })();

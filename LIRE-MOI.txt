@@ -1,3 +1,3 @@
-JACK22 11.5 + Claude - 7.0 (M2 : gestes de montage) - CANDIDATE
-Base : la 6.9 (SHA-256 5f61673d...). La 6.9 reste intacte.
-Lire JACK22-11.5-7-0-MONTAGE-RENDU.md. Captures Edge dans captures\.
+JACK22 11.5 + Claude - 7.6 - CANDIDATE
+Base : la 7.5 (SHA-256 47ba7d50...). La 7.5 reste intacte.
+Lire le fichier -RENDU.md.

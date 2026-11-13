@@ -1,0 +1,32 @@
+Remplacements de la 7.6 (M5 : effets et courbes par piste audio). Quatre lignes de code ChatGPT (racks j100, courbes j101), chacune trouvée une seule fois.
+Pourquoi : les racks d'effets et les courbes n'acceptaient et ne listaient que des canaux fixes (batterie, basse, mélodie, voix, imports, instruments, bus).
+On ajoute les pistes audio (identifiants « aud_… », créés par « ＋ Piste audio ») : acceptées à la sauvegarde, listées dans les menus. Rien d'autre ne change :
+un projet sans réglage par piste garde exactement le même chemin du son.
+
+### j100 : la sauvegarde des racks accepte les pistes audio
+<<<
+const keyOK=k=>/^(drums|bass|melody|voices|imports|inst_[a-z0-9_]{1,40}|bus:[a-z0-9]{1,40})$/.test(k);
+===
+const keyOK=k=>/^(drums|bass|melody|voices|imports|inst_[a-z0-9_]{1,40}|aud_[a-z0-9]{1,40}|bus:[a-z0-9]{1,40})$/.test(k);
+>>>
+
+### j100 : le menu des racks liste les pistes audio
+<<<
+function channels(){return[...song.tracks.map(t=>[t.key,t.label]),['voices','Voix · groupe'],['imports','Audio importé · groupe'],...settings.buses.map(b=>['bus:'+b.id,'BUS · '+b.name])];}
+===
+function channels(){return[...song.tracks.map(t=>[t.key,t.label]),['voices','Voix · groupe'],['imports','Audio importé · groupe'],...(window.J22AudioChannels?.()||[]),...settings.buses.map(b=>['bus:'+b.id,'BUS · '+b.name])];}
+>>>
+
+### j101 : les courbes acceptent les pistes audio
+<<<
+!/^(drums|bass|melody|voices|imports|inst_[a-z0-9_]{1,40}|bus:[a-z0-9]{1,40})$/.test(c.channel)
+===
+!/^(drums|bass|melody|voices|imports|inst_[a-z0-9_]{1,40}|aud_[a-z0-9]{1,40}|bus:[a-z0-9]{1,40})$/.test(c.channel)
+>>>
+
+### j101 : le menu des courbes nomme les pistes audio
+<<<
+['imports','Audio · groupe'],...racks.buses.map(b=>['bus:'+b.id,b.name])]);
+===
+['imports','Audio · groupe'],...(window.J22AudioChannels?.()||[]),...racks.buses.map(b=>['bus:'+b.id,b.name])]);
+>>>
